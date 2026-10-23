@@ -1,12 +1,18 @@
 import { useEffect, useRef } from "react";
 import type { CrfField } from "../../types/crf";
-import { crfSections } from "./sections";
+import { crfSections, formCopy, getFieldAccessibleLabel } from "./sections";
 
 function PrintField({ field }: { field: CrfField }) {
   return (
-    <div className="print-field" data-print-field={field.id}>
-      <p className="print-field-label">{field.label}</p>
-      {field.kind === "select" || field.kind === "multiselect" ? (
+    <div
+      className={`print-field${field.when ? " paper-option-details" : ""}`}
+      data-print-field={field.id}
+    >
+      {field.label && (
+        <p className="print-field-label clinical-copy">{field.label}</p>
+      )}
+      {field.prefix && <p className="field-prefix">{field.prefix}</p>}
+      {field.kind === "radio" || field.kind === "multiselect" ? (
         <div className="print-options">
           {field.options.map((option) => (
             <span key={option}>
@@ -16,16 +22,22 @@ function PrintField({ field }: { field: CrfField }) {
           ))}
         </div>
       ) : (
-        <div
-          className={`paper-answer${field.kind === "textarea" ? " paper-notes" : ""}`}
-          aria-label="Elle doldurma alanı"
-        />
+        <div className="paper-value">
+          <div
+            className={`paper-answer${field.kind === "textarea" ? " paper-notes" : ""}`}
+            aria-label={getFieldAccessibleLabel(field)}
+          >
+            {field.printTemplate}
+          </div>
+          {field.unit && <span>{field.unit}</span>}
+        </div>
       )}
-      {field.hint && <p className="print-field-hint">{field.hint}</p>}
+      {field.hint && (
+        <p className="print-field-hint clinical-copy">{field.hint}</p>
+      )}
     </div>
   );
 }
-
 export function PrintCrf({
   preview,
   onClose,
@@ -63,32 +75,13 @@ export function PrintCrf({
       <div className="print-sheet">
         <header className="print-header">
           <h1 ref={titleRef} tabIndex={-1}>
-            Dr. Adnan Hasgül Tez Formu
+            {formCopy.title}
           </h1>
-          <p>
-            Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama
-            Formu (CRF)
-          </p>
+          <p className="clinical-copy">{formCopy.subtitle}</p>
           <p className="print-warning">
-            <strong>MOR TÜP (EDTA) · Mor tüpte kan alınacak!</strong>
+            <strong>{formCopy.warning}</strong>
           </p>
-          <p>Boş manuel CRF taslağı · Kimlik belirleyici bilgi yazmayın.</p>
         </header>
-        <div className="print-field print-eligibility">
-          <p className="print-field-label">
-            Hasta eş zamanlı antiagregan kullanıyor mu?
-          </p>
-          <div className="print-options">
-            <span>
-              <span className="paper-checkbox" aria-hidden="true" />
-              Evet → Hasta çalışma için uygun değil.
-            </span>
-            <span>
-              <span className="paper-checkbox" aria-hidden="true" />
-              Hayır
-            </span>
-          </div>
-        </div>
         {crfSections.map((section) => (
           <section
             className="print-section"
@@ -96,25 +89,21 @@ export function PrintCrf({
             data-print-section={section.number}
             aria-labelledby={`print-section-${section.id}`}
           >
-            <h2 id={`print-section-${section.id}`}>
-              {section.number}. {section.title}
+            <h2 id={`print-section-${section.id}`} className="clinical-copy">
+              BÖLÜM {section.number}: {section.title}
             </h2>
-            <p className="print-section-description">{section.description}</p>
-            {section.fields.map((field, index) => (
+            {section.fields.map((field) => (
               <div key={field.id} className="print-field-block">
-                {field.group &&
-                  field.group !== section.fields[index - 1]?.group && (
-                    <h3 className="print-group-heading">{field.group}</h3>
-                  )}
+                {field.group && (
+                  <h3 className="print-group-heading clinical-copy">
+                    {field.group}
+                  </h3>
+                )}
                 <PrintField field={field} />
               </div>
             ))}
           </section>
         ))}
-        <p className="print-footnote">
-          Bu taslak otomatik skor veya klinik karar üretmez. Elektronik kayıt
-          oluşturmaz.
-        </p>
       </div>
     </section>
   );

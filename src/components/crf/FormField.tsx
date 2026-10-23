@@ -1,5 +1,5 @@
-import { getMaxLength } from "./validation";
 import type { CrfField, CrfValue } from "../../types/crf";
+import { getFieldAccessibleLabel } from "./sections";
 
 interface Props {
   field: CrfField;
@@ -11,114 +11,109 @@ interface Props {
 
 export function FormField({ field, value, onChange, onBlur, error }: Props) {
   const id = `crf-${field.id}`;
-  const common = {
-    id,
-    name: field.id,
-    value: typeof value === "string" ? value : "",
-    required: field.required,
-    onBlur,
-    "aria-invalid": error ? true : undefined,
-    "aria-describedby":
-      [field.hint ? `${id}-hint` : "", error ? `${id}-error` : ""]
-        .filter(Boolean)
-        .join(" ") || undefined,
-  };
-
-  if (field.kind === "multiselect") {
-    const selected = Array.isArray(value) ? value : [];
-    return (
-      <fieldset
-        id={id}
-        tabIndex={-1}
-        className={`form-field multi-choice-field${error ? " invalid-field" : ""}`}
-        aria-describedby={common["aria-describedby"]}
-        aria-invalid={common["aria-invalid"]}
-        onBlur={onBlur}
-      >
-        <legend>
-          {field.label}
-          {field.required && <span aria-hidden="true"> *</span>}
-        </legend>
-        <div className="multi-choice-options">
-          {field.options.map((option, index) => (
-            <label key={option} htmlFor={`${id}-${index}`}>
-              <input
-                id={`${id}-${index}`}
-                name={field.id}
-                type="checkbox"
-                value={option}
-                checked={selected.includes(option)}
-                onChange={(event) =>
-                  onChange(
-                    event.target.checked
-                      ? [...selected, option]
-                      : selected.filter((item) => item !== option),
-                  )
-                }
-              />
-              {option}
-            </label>
-          ))}
-        </div>
-        {error && (
-          <p className="field-error" id={`${id}-error`}>
-            {error}
-          </p>
-        )}
-        {field.hint && (
-          <p className="field-hint" id={`${id}-hint`}>
-            {field.hint}
-          </p>
-        )}
-      </fieldset>
-    );
-  }
-
-  return (
-    <div
-      className={`form-field${error ? " invalid-field" : ""}${field.kind === "textarea" ? " full-width" : ""}`}
-    >
-      <label htmlFor={id}>
-        {field.label}
-        {field.required && <span aria-hidden="true"> *</span>}
-      </label>
-      {field.kind === "select" ? (
-        <select {...common} onChange={(event) => onChange(event.target.value)}>
-          <option value="">Seçiniz</option>
-          {field.options.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      ) : field.kind === "textarea" ? (
-        <textarea
-          {...common}
-          rows={3}
-          maxLength={getMaxLength(field)}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      ) : (
-        <input
-          {...common}
-          type={field.kind}
-          min={field.kind === "number" ? field.min : undefined}
-          max={field.kind === "number" ? field.max : undefined}
-          step={field.kind === "number" ? (field.step ?? "1") : undefined}
-          maxLength={getMaxLength(field)}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
+  const description =
+    [field.hint ? `${id}-hint` : "", error ? `${id}-error` : ""]
+      .filter(Boolean)
+      .join(" ") || undefined;
+  const label = getFieldAccessibleLabel(field);
+  const className = `form-field${error ? " invalid-field" : ""}${field.when ? " conditional-field" : ""}`;
+  const feedback = (
+    <>
       {error && (
         <p className="field-error" id={`${id}-error`}>
           {error}
         </p>
       )}
       {field.hint && (
-        <p className="field-hint" id={`${id}-hint`}>
+        <p className="field-hint clinical-copy" id={`${id}-hint`}>
           {field.hint}
         </p>
       )}
+    </>
+  );
+
+  if (field.kind === "multiselect" || field.kind === "radio") {
+    const selected = Array.isArray(value) ? value : [];
+    return (
+      <fieldset
+        id={id}
+        tabIndex={-1}
+        className={`${className} multi-choice-field full-width`}
+        aria-label={field.label ? undefined : label}
+        aria-describedby={description}
+        aria-invalid={error ? true : undefined}
+        onBlur={onBlur}
+      >
+        {field.label && (
+          <legend className="clinical-copy">{field.label}</legend>
+        )}
+        <div className="multi-choice-options">
+          {field.options.map((option, index) => (
+            <label key={option} htmlFor={`${id}-${index}`}>
+              <input
+                id={`${id}-${index}`}
+                name={field.id}
+                type={field.kind === "radio" ? "radio" : "checkbox"}
+                value={option}
+                checked={
+                  field.kind === "radio"
+                    ? value === option
+                    : selected.includes(option)
+                }
+                onChange={(event) =>
+                  onChange(
+                    field.kind === "radio"
+                      ? option
+                      : event.target.checked
+                        ? [...selected, option]
+                        : selected.filter((item) => item !== option),
+                  )
+                }
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </div>
+        {feedback}
+      </fieldset>
+    );
+  }
+
+  const common = {
+    id,
+    name: field.id,
+    value: typeof value === "string" ? value : "",
+    onBlur,
+    "aria-label": field.label ? undefined : label,
+    "aria-describedby": description,
+    "aria-invalid": error ? true : undefined,
+    onChange: (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    ) => onChange(event.target.value),
+  };
+  return (
+    <div
+      className={`${className}${field.kind === "textarea" ? " full-width" : ""}`}
+    >
+      {field.label && (
+        <label className="clinical-copy" htmlFor={id}>
+          {field.label}
+        </label>
+      )}
+      {field.prefix && <p className="field-prefix">{field.prefix}</p>}
+      <div className="input-with-unit">
+        {field.kind === "textarea" ? (
+          <textarea {...common} rows={3} />
+        ) : (
+          <input
+            {...common}
+            type={field.kind}
+            step={field.kind === "number" ? "any" : undefined}
+          />
+        )}
+        {field.unit && <span className="field-unit">{field.unit}</span>}
+      </div>
+      {feedback}
     </div>
   );
 }

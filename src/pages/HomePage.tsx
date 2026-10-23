@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { AdminPlaceholder } from "../components/AdminPlaceholder";
 import { PrintCrf } from "../components/crf/PrintCrf";
+import { formCopy } from "../components/crf/sections";
 import { CrfForm } from "../components/crf/CrfForm";
 import type { EligibilityAnswer } from "../types/crf";
 
@@ -37,18 +38,14 @@ export function HomePage() {
         <main>
           <section className="intro" aria-labelledby="page-title">
             <p className="eyebrow">ELEKTRONİK OLGU RAPOR FORMU</p>
-            <h1 id="page-title">Dr. Adnan Hasgül Tez Formu</h1>
-            <p className="subtitle">
-              Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri
-              Toplama Formu (CRF)
-            </p>
+            <h1 id="page-title">{formCopy.title}</h1>
+            <p className="subtitle clinical-copy">{formCopy.subtitle}</p>
           </section>
           <section className="blood-notice" aria-labelledby="blood-title">
             <span className="tube" aria-hidden="true">
               !
             </span>
-            <h2 id="blood-title">MOR TÜP (EDTA)</h2>
-            <p className="blood-message">Mor tüpte kan alınacak!</p>
+            <h2 id="blood-title">{formCopy.warning}</h2>
           </section>
           <div className="print-launch">
             <button
@@ -128,9 +125,7 @@ export function HomePage() {
               </p>
             </div>
           </section>
-          {formOpen && eligibility === "no" && (
-            <CrfForm paused={printOpen || adminOpen} />
-          )}
+          {formOpen && eligibility === "no" && <CrfForm />}
           <p className="privacy-note">
             Geliştirme sürümü · Gerçek hasta verisi girmeyin. Bu aşamada kayıt,
             kimlik doğrulama ve veri aktarımı etkin değildir.

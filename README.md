@@ -1,4 +1,4 @@
-# Dr. Adnan Hasgül Tez Formu
+# ADNAN TEZ FORMU
 
 Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu (CRF) için web eCRF arayüzü ve Firebase/deployment altyapısı. Bu sürüm uygunluk sorusu, altı adımlı dijital CRF, yedi bölümlü boş yazdırma formu ve yönetici placeholder modalı içerir. Veri kaydetme, yönetici işlevleri, giriş ve export henüz uygulanmamıştır. Gerçek hasta verisi kullanmayın.
 
@@ -35,34 +35,43 @@ npm run preview
 
 Firebase başlangıcı veri okumaz/yazmaz, oturum açmaz. Kalıcı Firestore offline cache etkinleştirilmemiştir. Hareket azaltma tercihi mor uyarının yavaş animasyonunu kapatır.
 
-## Form arayüzü
+## Kaynak CRF ve form arayüzü
 
-- Antiagregan sorusuna yanıt verilmeden form açılmaz. “Evet” kırmızı uygunsuzluk uyarısı gösterir ve butonu devre dışı bırakır. “Hayır” ile “Formu Doldur” kullanılabilir.
-- Dijital public akış yalnızca Bölüm **1, 2, 3, 5, 6, 7** içerir; aynı anda bir bölüm gösterilir. Bölüm 4 yerine yönetici tarafından tamamlanacağı bilgisi bulunur. Bölüm 1’de laboratuvar değişkeni yoktur; laboratuvar/radyoloji yalnızca Bölüm 4’tedir.
-- Tek kaynakta 51 CRF alanı vardır: 30 public alan, 21 yönetici alanı. Public alanların 24’ü zorunludur. Zorunluluklar `required: true/false`, erişim `entryRole`, sıra `number` metadata’sıyla belirtilir. Serbest açıklamalar ve kanama olayına ilişkin iki tarih/saat isteğe bağlıdır. Alanların klinik anlamları, seçenekleri ve mevcut sayısal sınırları değiştirilmemiştir. Bu taslak zorunluluklar çalışma protokolüne göre gözden geçirilebilir.
-- `validation.ts`, zorunluluk, mevcut sayı aralığı/adımı, seçenek ve tarih/uzunluk doğrulamasını ortak yürütür. İsteğe bağlı alanda girilmiş geçersiz değer de hata verir. İlerleme yalnızca geçerli zorunlu public cevaplardan hesaplanır; Bölüm 4 tamamen hariçtir.
-- İlk doldurmada aktif bölüm geçerli olduğunda 450 ms tamamlanma geri bildirimi sonrası sonraki bölüme geçilir. Tamamlanmış bölüme geri dönüldüğünde otomatik geçiş tekrarlanmaz. Önceki/sonraki düğmeleri ve stepper ile bölüm seçilebilir; cevaplar korunur. Yazdırma önizlemesi veya yönetici modalı açıkken otomatik geçiş duraklatılır.
-- Son adımda **Kaydet**, bütün public cevapları doğrular. İlk eksik/geçersiz alanın bölümünü açar, alana scroll/focus yapar, `aria-invalid` ve alanla ilişkilendirilmiş hata metni gösterir. Düzeltildiğinde hata temizlenir. Tüm kontroller geçse de yalnızca doğrulama mesajı gösterilir; **Firestore kaydı yapılmaz**.
-- Alanlar yalnızca React state içinde tutulur. Firestore, localStorage, sessionStorage veya dosyaya yazılmaz. Sayfa yenilenince ya da uygunluk yanıtı değiştirilince silinir; bölüm, yazdırma görünümü ve yönetici modalı geçişlerinde korunur.
-- Tarih, sayı, seçim ve açıklama alanları bir başlangıç taslağıdır. ISTH skoru, CrCl veya klinik karar hesaplanmaz. Boş cevaplar “Hayır” kabul edilmez. Yönetici düğmesi sadece bilgilendirme modalı açar.
+Klinik içerik, kullanıcı tarafından sağlanan kaynak CRF’den alınmıştır. Çalışan uygulamanın tek soru kaynağı `src/components/crf/sections.ts` dosyasıdır. Başlık, klinik uyarı, bölüm/alt kategori başlıkları, soru metinleri, parantez açıklamaları, seçenekler ve birimler bu metadata’dan dijital ve basılı formda gösterilir. Test referansı `tests/fixtures/source-crf.txt`, boş çizgi/kutu görselleştirmeleri hariç kabul edilen kaynak klinik metnin bağımsız transkriptidir; runtime soru listesi değildir. Testler yalnızca boşluk/satır sarmasını normalize ederek klinik metni baştan sona karşılaştırır.
 
-## Bölüm 4: yönetici tarafından tamamlanacak alanlar
+Tek bilinçli klinik içerik istisnası: Bölüm 1’deki **Son Laboratuvar Değerleri (Varsa)** bloğu ve **Serum Kreatinin, Tahmini CrCl (Klerens), ALT / AST, Hemoglobin (Hb)** alanları dijital ve basılı formda bulunmaz. Bölüm 4 laboratuvarları eksiksiz korunur.
 
-Bölüm 4, aynı merkezi metadata içinde 21 alan içerir: iki çoklu seçim DVT alanı ve 19 laboratuvar parametresi. Bu alanlar Bölüm 1’de tekrarlanmaz; public stepper, validation ve ilerleme yüzdesinden tamamen hariçtir.
+| Bölüm | Veri alanı sayısı |
+| --- | ---: |
+| 1 | 9 |
+| 2 | 5 |
+| 3 | 5 |
+| 4 | 21 |
+| 5 | 18 |
+| 6 | 7 |
+| 7 | 6 |
+| Toplam | **71** |
 
-- DVT seviyesi/lokalizasyonu: İliak, Femoral, Popliteal, Üst ekstremite, IVC, SVC, Juguler. Birden fazla seçenek işaretlenebilir.
-- DVT tarafı: Sağ, Sol. İkisi birlikte işaretlenebilir.
-- Laboratuvar: BUN, Kreatinin, eGFR, Kalsiyum, Sodyum, Potasyum, Total bilirubin, Direkt bilirubin, AST, ALT, Total protein, Albumin, WBC, HGB, PLT, HCT, PT, INR, aPTT.
+Public cevap modeli 50, yönetici/Bölüm 4 modeli 21 alan içerir. Sayılar bağımsız cevap değerlerini kapsar: “Diğer” metinleri, sıklık/süre/boyut alt cevapları, transfüzyon miktarı ve ara süresi ayrı alanlardır. Uygunluk sorusu CRF’ye dahil değildir.
 
-DVT cevapları `string[]`, laboratuvar cevapları metin biçiminde sayısal değerler olarak tiplenir. `InvestigationValues`, `pending_completion`/`completed` modelinde bütün bu alanları taşır. Çoklu seçim widget’ı, doğrulama ve kağıt seçenekleri `kind: "multiselect"`/`options` metadata’sından üretilir. Gerçek yönetici ekranı veya veri yazımı henüz yoktur.
+- Başlangıçtaki antiagregan sorusu çalışma öncesi uygulama kontrolüdür. “Evet” formu açmayı engeller; “Hayır” ile “Formu Doldur” kullanılabilir. Bu soru basılı kaynak CRF’ye eklenmez.
+- Public dijital akış **1 → 2 → 3 → 5 → 6 → 7** olarak kalır. Aynı anda bir bölüm görünür. Bölüm 4 yalnızca yönetici bilgilendirmesiyle temsil edilir; kullanıcıya düzenlenebilir alanları gösterilmez.
+- Kaynak zorunluluk belirtmediğinden **tüm klinik alanların `required` değeri false**. Önceki keyfi zorunluluklar ve otomatik ilerleme kaldırılmıştır. Bölümler “Sonraki Bölüm”, “Önceki Bölüm” ve stepper ile değiştirilir. Ziyaret durumu, klinik tamamlanma olarak gösterilmez; zorunlu alan yüzdesi hesaplanmaz.
+- `validation.ts`, yalnızca girilen ve o an görünür/uygulanabilir cevapların sayı/tarih/saat/seçenek biçimini kontrol eder. Kaynak dışı klinik sınır, skor, VKİ veya CrCl hesaplaması ve metin kesme sınırı yoktur. Boş cevaplar “Hayır” kabul edilmez.
+- Koşullu alt cevaplar metadata’daki `when` ilişkilerinden gösterilir. Üst cevap değişince alt cevaplar gizlenir fakat bellekten silinmez; tekrar görünür olduğunda korunur. Gizli alt cevaplar biçim kontrolünü engellemez. Baskıda bütün alt seçenekler görünür.
+- Son adımda **Kaydet**, yalnızca public biçim kontrolünü çalıştırır. Girilmiş geçersiz bir cevabın bölümünü açıp alana scroll/focus yapar; `aria-invalid` ve hata ilişkilendirmesi kullanır. Başarılı kontrol mesajı veri kaydedildiği iddiasında bulunmaz. **Firestore kaydı yoktur**.
+- Cevaplar yalnızca React state içindedir. Bölüm, yazdırma ve yönetici modalı geçişlerinde korunur; sayfa yenilenince veya uygunluk yanıtı değişince silinir. localStorage/sessionStorage/IndexedDB’ye yazılmaz.
+- DVT lokalizasyonu ve tarafı önceki kullanıcı açıklamasına uygun çoklu seçimdir. Kaynakta checkbox olarak verilen diğer antitrombotikler, inhibitörler ve indükleyiciler de ayrı çoklu seçim değerleridir. Yönetici ekranı placeholder olarak kalır.
 
 ## Boş form yazdırma
 
-Ana sayfadaki **Form Yazdır**, A4 önizlemesini açar. **Yazdır**, tarayıcının standart `window.print()` diyalogunu çağırır; **Forma Dön**, mevcut dijital cevapları koruyarak geri döner. Doğrudan tarayıcı yazdırma komutu da tam boş formu kullanır.
+**Form Yazdır**, aynı metadata’dan bütün yedi bölümü ve 71 alanı içeren boş A4 önizlemesini açar. **Yazdır**, `window.print()` çağırır. **Forma Dön** dijital cevapları korur. Doğrudan tarayıcı yazdırma komutu da tam boş formu gösterir.
 
-`PrintCrf`, aynı `crfSections`/`fields` tanımlarından **Bölüm 4 dahil yedi bölümün tamamını** üretir. Dijital cevaplar kağıda aktarılmaz. Elle doldurma kutuları ve işaretlenebilir seçenekler kullanılır. `@page` A4/14 mm kenar boşluğu, siyah-beyaz stiller ve soru bazında `break-inside: avoid` uygulanır; butonlar, navigasyon ve dijital validation görünümü basılmaz. Bölüm 4 yeni sayfada başlar; radyoloji/DVT ve laboratuvar alt başlıkları ilk sorularıyla birlikte tutulur. Alan boyutları küçültülmeden Chromium A4 çıktısı 5 sayfa olarak doğrulanmıştır; tarayıcı/yazıcı ayarları sayfalamayı etkileyebilir.
+Dijital cevaplar kağıda aktarılmaz. Bölüm 4’ün 19 laboratuvarı ve DVT seçenekleri, Bölüm 5’in 14 ana sorusu ve tüm alt seçenekleri, Bölüm 6–7’nin tamamı bulunur. Kaynak birimleri (ör. eGFR mL/dk, Sodyum/Potasyum mEq/L, WBC/PLT K/uL) aynen kullanılır. Bölüm 1 laboratuvar istisnası dışında klinik metin çıkarılmamıştır.
 
-`digital-public` bağlamında yalnızca public bölümler, `admin-completion` bağlamında yalnızca Bölüm 4 düzenlenebilir (`getEditableSections`). Admin ekranı veya kayıt tamamlama işlemi henüz uygulanmamıştır; `print` bağlamında tüm alanlar boş manuel alanlardır.
+`@page` A4/14 mm kenar boşluğu ve siyah-beyaz stiller kullanır. Bölümler yeni sayfada başlar; sorular `break-inside: avoid` ile korunur. Kaynak içeriği küçültülmeden Chromium kontrolünde çıktı **9 sayfadır**; yazıcı/tarayıcı ayarları sayfa sayısını etkileyebilir. Butonlar ve web navigasyonu basılmaz.
+
+`digital-public` yalnızca public bölümleri, `admin-completion` yalnızca Bölüm 4’ü düzenlenebilir kabul eder (`getEditableSections`). Gerçek yönetici işlemleri, Firestore, Authentication, autosave, AHT kod üretimi ve export bu sürüme eklenmemiştir.
 
 ## Environment variables
 

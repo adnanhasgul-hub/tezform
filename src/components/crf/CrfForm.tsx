@@ -1,28 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import type { CrfValue, CrfValues, FieldId } from "../../types/crf";
 import { FormField } from "./FormField";
 import {
   createEmptyCrf,
   investigationsNotice,
+  isFieldVisible,
   publicSections,
 } from "./sections";
-import {
-  getRequiredProgress,
-  validatePublicCrf,
-  validateSection,
-} from "./validation";
+import { validatePublicCrf, validateSection } from "./validation";
 
-export function CrfForm({ paused = false }: { paused?: boolean }) {
+export function CrfForm() {
   const [values, setValues] = useState<CrfValues>(createEmptyCrf);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [edited, setEdited] = useState<ReadonlySet<string>>(() => new Set());
-  const [reviewSections, setReviewSections] = useState<ReadonlySet<string>>(
+  const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
+  const [touched, setTouched] = useState<ReadonlySet<FieldId>>(() => new Set());
+  const [attempted, setAttempted] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  const [touched, setTouched] = useState<ReadonlySet<FieldId>>(() => new Set());
-  const [attemptedSections, setAttemptedSections] = useState<
-    ReadonlySet<string>
-  >(() => new Set());
   const [showAllErrors, setShowAllErrors] = useState(false);
   const [validated, setValidated] = useState(false);
   const [focusRequest, setFocusRequest] = useState<{ fieldId: FieldId } | null>(
@@ -33,15 +27,6 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
   const active = publicSections[activeIndex]!;
   const isLast = activeIndex === publicSections.length - 1;
   const errors = validatePublicCrf(values);
-  const sectionValid =
-    Object.keys(validateSection(active, values)).length === 0;
-  const progress = getRequiredProgress(values);
-  const willAdvance =
-    !paused &&
-    !isLast &&
-    sectionValid &&
-    edited.has(active.id) &&
-    !reviewSections.has(active.id);
 
   useEffect(() => {
     const target = focusRequest
@@ -53,39 +38,22 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
     target?.scrollIntoView({ block: "center", behavior: "instant" });
   }, [activeIndex, focusRequest]);
 
-  useEffect(() => {
-    if (!willAdvance) return;
-    const timer = window.setTimeout(() => {
-      setReviewSections((previous) => new Set(previous).add(active.id));
-      setFocusRequest(null);
-      setActiveIndex(activeIndex + 1);
-    }, 450);
-    return () => window.clearTimeout(timer);
-  }, [willAdvance, values, active.id, activeIndex]);
-
   function navigate(index: number, fieldId?: FieldId) {
-    if (sectionValid)
-      setReviewSections((previous) => new Set(previous).add(active.id));
+    setVisited((previous) => new Set(previous).add(active.id));
     setActiveIndex(index);
     setFocusRequest(fieldId ? { fieldId } : null);
   }
-
   function updateField(id: FieldId, value: CrfValue) {
     setValues((previous) => ({ ...previous, [id]: value }));
-    setEdited((previous) => new Set(previous).add(active.id));
     setValidated(false);
   }
-
   function next() {
-    const firstInvalid = active.fields.find((field) => errors[field.id]);
-    if (firstInvalid) {
-      setAttemptedSections((previous) => new Set(previous).add(active.id));
-      navigate(activeIndex, firstInvalid.id);
-      return;
-    }
-    navigate(activeIndex + 1);
+    const invalid = active.fields.find((field) => errors[field.id]);
+    if (invalid) {
+      setAttempted((previous) => new Set(previous).add(active.id));
+      navigate(activeIndex, invalid.id);
+    } else navigate(activeIndex + 1);
   }
-
   function validateAll() {
     setShowAllErrors(true);
     for (const [index, section] of publicSections.entries()) {
@@ -98,57 +66,44 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
     }
     setValidated(true);
   }
-
   return (
     <section className="crf-container" aria-labelledby="crf-title">
       <div className="form-intro">
         <p className="eyebrow">VERİ TOPLAMA FORMU · 6 ADIM</p>
         <h2 id="crf-title">Olgu rapor formu</h2>
         <p>
-          Arayüz taslağıdır. Yalnızca kurgu değerlerle deneyin. Cevaplar bölüm
-          geçişlerinde korunur; sayfa yenilendiğinde silinir ve sunucuya
-          gönderilmez.
+          Cevaplar yalnızca sayfa belleğinde tutulur; sayfa yenilendiğinde
+          silinir. Bölümler arasında düğmelerle geçiş yapabilirsiniz.
         </p>
       </div>
       <p className="admin-section-notice">
         <strong>Bölüm 4:</strong> {investigationsNotice}
       </p>
       <div className="crf-progress">
-        <div className="progress-caption">
-          <strong>
-            Adım {activeIndex + 1} / {publicSections.length}
-          </strong>
-          <span>
-            Zorunlu alanlar: {progress.valid} / {progress.total} · %
-            {progress.percent}
-          </span>
-        </div>
-        <progress
-          max={100}
-          value={progress.percent}
-          aria-label="Zorunlu public alanların tamamlanma oranı"
-        />
+        <strong>
+          Adım {activeIndex + 1} / {publicSections.length}
+        </strong>
+        <p className="format-note">
+          Kaynak CRF zorunlu alan belirtmez. Otomatik bölüm geçişi kapalıdır;
+          boş cevaplar bir seçenek olarak yorumlanmaz.
+        </p>
       </div>
       <nav aria-label="Form bölümleri" className="stepper">
         <ol>
           {publicSections.map((section, index) => {
-            const complete =
-              Object.keys(validateSection(section, values)).length === 0;
             const hasErrors =
-              !complete &&
-              (showAllErrors ||
-                attemptedSections.has(section.id) ||
-                edited.has(section.id));
+              Object.keys(validateSection(section, values)).length > 0 &&
+              (showAllErrors || attempted.has(section.id));
             const status = hasErrors
-              ? "Eksik/hatalı"
-              : complete
-                ? "Tamamlandı"
-                : "Henüz başlanmadı";
+              ? "Biçim hatası"
+              : visited.has(section.id)
+                ? "Ziyaret edildi"
+                : "Henüz görüntülenmedi";
             return (
               <li key={section.id}>
                 <button
                   type="button"
-                  className={`step-button ${complete ? "complete" : hasErrors ? "has-errors" : ""}`}
+                  className={`step-button${hasErrors ? " has-errors" : ""}`}
                   aria-label={`Bölüm ${section.number}: ${section.title}. ${index === activeIndex ? "Aktif. " : ""}${status}`}
                   aria-current={index === activeIndex ? "step" : undefined}
                   onClick={() => navigate(index)}
@@ -156,9 +111,7 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
                   <span className="step-number">{section.number}</span>
                   <span className="step-copy">
                     <strong>{section.shortTitle}</strong>
-                    <small>
-                      {index === activeIndex ? `Aktif · ${status}` : status}
-                    </small>
+                    <small>{index === activeIndex ? "Aktif" : status}</small>
                   </span>
                 </button>
               </li>
@@ -183,44 +136,44 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
             <span className="section-number" aria-hidden="true">
               {String(active.number).padStart(2, "0")}
             </span>
-            <div>
-              <h3 id="active-section-title" ref={headingRef} tabIndex={-1}>
-                {active.title}
-              </h3>
-              <p>{active.description}</p>
-            </div>
+            <h3
+              className="clinical-copy"
+              id="active-section-title"
+              ref={headingRef}
+              tabIndex={-1}
+            >
+              {active.title}
+            </h3>
           </div>
-          <p className="required-note">
-            * işaretli alanlar zorunludur. Boş cevaplar “Hayır” kabul edilmez.
-          </p>
           <div className="field-grid">
-            {active.fields.map((field) => (
-              <FormField
-                key={field.id}
-                field={field}
-                value={values[field.id]}
-                error={
-                  showAllErrors ||
-                  attemptedSections.has(active.id) ||
-                  touched.has(field.id)
-                    ? errors[field.id]
-                    : undefined
-                }
-                onBlur={() =>
-                  setTouched((previous) => new Set(previous).add(field.id))
-                }
-                onChange={(value) => updateField(field.id, value)}
-              />
-            ))}
+            {active.fields
+              .filter((field) => isFieldVisible(field, values))
+              .map((field) => (
+                <Fragment key={field.id}>
+                  {field.group && (
+                    <h4 className="clinical-group-heading full-width">
+                      {field.group}
+                    </h4>
+                  )}
+                  <FormField
+                    field={field}
+                    value={values[field.id]}
+                    error={
+                      showAllErrors ||
+                      attempted.has(active.id) ||
+                      touched.has(field.id)
+                        ? errors[field.id]
+                        : undefined
+                    }
+                    onBlur={() =>
+                      setTouched((previous) => new Set(previous).add(field.id))
+                    }
+                    onChange={(value) => updateField(field.id, value)}
+                  />
+                </Fragment>
+              ))}
           </div>
         </section>
-        <div className="wizard-feedback" role="status">
-          {willAdvance
-            ? "Bölüm tamamlandı. Sonraki bölüme geçiliyor…"
-            : reviewSections.has(active.id)
-              ? "Kontrol modu: düzeltmelerinizden sonra sonraki bölümü kendiniz seçin."
-              : ""}
-        </div>
         <div className="wizard-actions">
           <button
             className="button secondary"
@@ -243,13 +196,12 @@ export function CrfForm({ paused = false }: { paused?: boolean }) {
         <div role="status">
           {validated && (
             <p className="validation-success">
-              Zorunlu alanlar doğrulandı. Veri kaydedilmedi. Bölüm 4 yönetici
-              tarafından tamamlanmayı bekliyor.
+              Girilen alanların biçim kontrolü tamamlandı. Veri kaydedilmedi.
             </p>
           )}
         </div>
         <p className="form-end">
-          “Kaydet” yalnızca alanları doğrular; bu sürümde kayıt oluşturmaz.
+          “Kaydet” yalnızca biçim kontrolü yapar; bu sürümde kayıt oluşturmaz.
         </p>
       </form>
     </section>

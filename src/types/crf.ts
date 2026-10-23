@@ -2,39 +2,59 @@ export type EligibilityAnswer = "" | "yes" | "no";
 
 export type PublicFieldId =
   | "participantCode"
-  | "age"
+  | "protocolDate"
   | "sex"
+  | "age"
   | "weight"
   | "height"
+  | "bmi"
   | "indication"
-  | "dose"
-  | "frequency"
+  | "indicationOther"
+  | "dailyDose"
+  | "dailyDoseOther"
   | "treatmentStart"
   | "adherence"
-  | "missedDoses"
-  | "otherAnticoagulant"
+  | "lastDoseTime"
+  | "otherAntithrombotic"
   | "nsaid"
-  | "ssri"
-  | "otherMedications"
-  | "epistaxis"
-  | "gingivalBleeding"
+  | "nsaidFrequency"
+  | "inhibitors"
+  | "inducers"
   | "bruising"
-  | "giBleeding"
+  | "bruisingSize"
+  | "gingivalBleeding"
+  | "gingivalDuration"
+  | "epistaxis"
+  | "epistaxisFrequency"
+  | "epistaxisDuration"
+  | "cutBleeding"
+  | "melena"
+  | "hematochezia"
+  | "hematemesis"
   | "hematuria"
-  | "otherBleeding"
-  | "severity"
-  | "hospitalization"
+  | "menorrhagia"
+  | "headache"
+  | "neurologicalSymptoms"
+  | "hemarthrosis"
+  | "hemoptysis"
+  | "subconjunctivalBleeding"
+  | "healthcareVisit"
+  | "healthcareVisitType"
   | "transfusion"
-  | "outcome"
-  | "bleedingOnset"
-  | "lastDoseAt"
-  | "assessmentDate"
-  | "investigator"
-  | "researchNotes";
+  | "transfusionUnits"
+  | "treatmentInterruption"
+  | "interruptionDays"
+  | "hemoglobinDrop"
+  | "bleedingOnsetInterval"
+  | "bleedingDayDose"
+  | "researchNotes"
+  | "investigatorName"
+  | "signatureStamp"
+  | "assessmentDate";
 
-export type DvtFieldId = "dvtLocations" | "dvtSide";
 export type InvestigationFieldId =
-  | DvtFieldId
+  | "dvtLocations"
+  | "dvtSide"
   | "bun"
   | "creatinine"
   | "egfr"
@@ -55,47 +75,51 @@ export type InvestigationFieldId =
   | "inr"
   | "aptt";
 
+export type MultiFieldId =
+  | "otherAntithrombotic"
+  | "inhibitors"
+  | "inducers"
+  | "dvtLocations"
+  | "dvtSide";
+
 export type FieldId = PublicFieldId | InvestigationFieldId;
 export type CrfValues = {
-  [K in FieldId]: K extends DvtFieldId ? string[] : string;
+  [K in FieldId]: K extends MultiFieldId ? string[] : string;
 };
 export type CrfValue = CrfValues[FieldId];
-
 interface BaseField {
   id: FieldId;
   label: string;
   required: boolean;
   hint?: string;
   group?: string;
+  prefix?: string;
+  unit?: string;
+  printTemplate?: string;
+  when?: { fieldId: FieldId; value: string };
 }
-
 export type CrfField = BaseField &
   (
-    | { id: DvtFieldId; kind: "multiselect"; options: readonly string[] }
-    | ({ id: Exclude<FieldId, DvtFieldId> } & (
-        | { kind: "text" | "date" | "datetime-local" | "textarea" }
-        | { kind: "number"; min: number; max?: number; step?: string }
-        | { kind: "select"; options: readonly string[] }
+    | { id: MultiFieldId; kind: "multiselect"; options: readonly string[] }
+    | ({ id: Exclude<FieldId, MultiFieldId> } & (
+        | { kind: "text" | "date" | "time" | "textarea" | "number" }
+        | { kind: "radio"; options: readonly string[] }
       ))
   );
-
 export interface CrfSection {
   id: string;
   number: number;
+  title: string;
   shortTitle: string;
   entryRole: "public" | "admin";
-  title: string;
-  description: string;
   fields: readonly CrfField[];
 }
-
 export type DigitalCrfContext = "digital-public" | "admin-completion";
 export type CrfContext = DigitalCrfContext | "print";
 export type PublicCrfValues = Pick<CrfValues, PublicFieldId>;
 export type InvestigationValues = Pick<CrfValues, InvestigationFieldId>;
 export type CrfRecordStatus = "pending_completion" | "completed";
-
-// Future persistence model only. Public validation does not create or save a record.
+// Model for future implementation only; this application does not save records.
 export type CrfRecord = { publicValues: PublicCrfValues } & (
   | {
       status: "pending_completion";
