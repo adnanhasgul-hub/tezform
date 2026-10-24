@@ -46,7 +46,8 @@
 
 .admin-stat-card,
 .admin-records,
-.admin-completion {
+.admin-completion,
+.admin-detail {
   background: #fff;
   border: 1px solid #dce1ed;
   border-radius: 14px;
@@ -77,7 +78,8 @@
 }
 
 .admin-records-heading,
-.admin-completion-heading {
+.admin-completion-heading,
+.admin-detail-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -86,7 +88,8 @@
 }
 
 .admin-records-heading h2,
-.admin-completion-heading h2 {
+.admin-completion-heading h2,
+.admin-detail-heading h2 {
   margin: 4px 0 0;
   font-size: 24px;
   color: #172b47;
@@ -94,7 +97,8 @@
 }
 
 .admin-records-heading .eyebrow,
-.admin-completion-heading .eyebrow {
+.admin-completion-heading .eyebrow,
+.admin-detail-heading .eyebrow {
   margin: 0;
 }
 
@@ -216,11 +220,13 @@
   font-size: 12px;
 }
 
-.admin-completion {
+.admin-completion,
+.admin-detail {
   padding: 22px;
 }
 
-.admin-completion-note {
+.admin-completion-note,
+.admin-detail-note {
   margin: -4px 0 20px;
   padding: 12px 14px;
   border-left: 4px solid #895bb5;
@@ -241,7 +247,8 @@
   margin-top: 0;
 }
 
-.admin-completion-actions {
+.admin-completion-actions,
+.admin-detail-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -261,6 +268,121 @@
   font-weight: 700;
 }
 
+.admin-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-detail-meta > div {
+  padding: 12px 14px;
+  border: 1px solid #e1e5ed;
+  border-radius: 9px;
+  background: #fafbfc;
+}
+
+.admin-detail-meta span {
+  display: block;
+  margin-bottom: 5px;
+  color: #69778b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-detail-meta strong {
+  color: #263952;
+  font-size: 14px;
+}
+
+.admin-detail-sections {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-detail-section {
+  overflow: hidden;
+  border: 1px solid #dde2ec;
+  border-radius: 11px;
+}
+
+.admin-detail-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f7f5fa;
+  border-bottom: 1px solid #e1e4eb;
+}
+
+.admin-detail-section-heading > span {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 8px;
+  background: #563080;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-detail-section-heading h3 {
+  margin: 0;
+  color: #263952;
+  font-size: 17px;
+  white-space: pre-line;
+}
+
+.admin-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.admin-detail-field {
+  padding: 12px 14px;
+  border-right: 1px solid #eceef3;
+  border-bottom: 1px solid #eceef3;
+}
+
+.admin-detail-field:nth-child(even) {
+  border-right: 0;
+}
+
+.admin-detail-field-wide {
+  grid-column: 1 / -1;
+  border-right: 0;
+}
+
+.admin-detail-field dt {
+  margin: 0 0 5px;
+  color: #59687c;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+.admin-detail-field dt.admin-detail-group {
+  margin-bottom: 8px;
+  color: #563080;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.admin-detail-field dd {
+  margin: 0;
+  color: #172b47;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
 @media (max-width: 760px) {
   .admin-shell {
     padding: 0 14px 28px;
@@ -268,7 +390,8 @@
 
   .admin-topbar,
   .admin-records-heading,
-  .admin-completion-heading {
+  .admin-completion-heading,
+  .admin-detail-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -278,21 +401,31 @@
   }
 
   .admin-stats,
-  .admin-filters {
+  .admin-filters,
+  .admin-detail-meta,
+  .admin-detail-grid {
     grid-template-columns: 1fr;
   }
 
   .admin-records,
-  .admin-completion {
+  .admin-completion,
+  .admin-detail {
     padding: 14px;
   }
 
-  .admin-completion-actions {
+  .admin-detail-field,
+  .admin-detail-field:nth-child(even) {
+    border-right: 0;
+  }
+
+  .admin-completion-actions,
+  .admin-detail-actions {
     align-items: stretch;
     flex-direction: column-reverse;
   }
 
-  .admin-completion-actions .button {
+  .admin-completion-actions .button,
+  .admin-detail-actions .button {
     width: 100%;
   }
 }
