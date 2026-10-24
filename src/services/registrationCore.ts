@@ -140,6 +140,16 @@ export async function allocateSubject(
       requestId,
     };
     const timestamp = store.timestamp();
+    // Queue the read counter's version precondition before dependent creates.
+    // A stale counter can then trigger the SDK's transaction retry instead of
+    // failing a subject/receipt Rules check against the newly committed number.
+    // All three writes still commit atomically and Rules still require exactly +1.
+    transaction.updateCounter({
+      lastAllocatedNumber: subjectNumber,
+      lastSubjectId: subjectId,
+      lastRequestId: requestId,
+      lastCreatedByUid: uid,
+    });
     transaction.createSubject(subjectId, {
       subjectCode: result.subjectCode,
       subjectNumber,
@@ -152,12 +162,6 @@ export async function allocateSubject(
       investigations: {},
     });
     transaction.createReceipt(uid, requestId, result);
-    transaction.updateCounter({
-      lastAllocatedNumber: subjectNumber,
-      lastSubjectId: subjectId,
-      lastRequestId: requestId,
-      lastCreatedByUid: uid,
-    });
     return result;
   });
 }

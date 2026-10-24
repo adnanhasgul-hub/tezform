@@ -93,7 +93,12 @@ function subject(uid: string, requestId: string, number: number) {
     investigations: {},
   };
 }
-async function allocate(db: Firestore, uid: string, requestId: string) {
+async function allocate(
+  db: Firestore,
+  uid: string,
+  requestId: string,
+  afterCounterRead?: (lastAllocatedNumber: number) => Promise<void>,
+) {
   const subjectRef = doc(collection(db, "subjects"));
   const receiptRef = doc(db, `submissionRequests/${uid}/requests/${requestId}`);
   return runTransaction(db, async (transaction) => {
@@ -102,6 +107,7 @@ async function allocate(db: Firestore, uid: string, requestId: string) {
     const counterRef = doc(db, "systemCounters/subjects");
     const counter = await transaction.get(counterRef);
     const number = counter.data()!.lastAllocatedNumber + 1;
+    await afterCounterRead?.(number - 1);
     const data = subject(uid, requestId, number);
     const result = {
       subjectId: subjectRef.id,
@@ -109,14 +115,16 @@ async function allocate(db: Firestore, uid: string, requestId: string) {
       subjectNumber: number,
       requestId,
     };
-    transaction.set(subjectRef, data);
-    transaction.set(receiptRef, result);
+    // Match the production allocation: put the read-version precondition first
+    // so concurrent stale writes reach the SDK's native transaction retry.
     transaction.set(counterRef, {
       lastAllocatedNumber: number,
       lastSubjectId: subjectRef.id,
       lastRequestId: requestId,
       lastCreatedByUid: uid,
     });
+    transaction.set(subjectRef, data);
+    transaction.set(receiptRef, result);
     return result;
   });
 }
@@ -164,18 +172,47 @@ test("anonymous collectors allocate AHT-000 atomically and retry returns only th
   );
 });
 
-test("two concurrent collectors receive distinct sequential codes; 999 rolls over to AHT-1000", async () => {
+test("two concurrent collectors receive distinct sequential codes; 999 rolls over to AHT-1000", { timeout: 60_000 }, async (context) => {
+  context.diagnostic("Starting concurrent allocations from counter -1");
+  const bothRead = Promise.withResolvers<void>();
+  let initialReads = 0;
+  let transactionAttempts = 0;
+  function synchronizeFirstRead() {
+    let firstAttempt = true;
+    return async (lastAllocatedNumber: number) => {
+      transactionAttempts++;
+      if (!firstAttempt) return;
+      firstAttempt = false;
+      assert.equal(lastAllocatedNumber, -1);
+      if (++initialReads === 2) bothRead.resolve();
+      await bothRead.promise;
+    };
+  }
   const results = await Promise.all([
-    allocate(anonymous("one"), "one", firstRequest),
-    allocate(anonymous("two"), "two", secondRequest),
+    allocate(anonymous("one"), "one", firstRequest, synchronizeFirstRead()),
+    allocate(anonymous("two"), "two", secondRequest, synchronizeFirstRead()),
   ]);
+  assert(
+    transactionAttempts >= 3,
+    "A real SDK transaction retry must resolve the forced counter conflict",
+  );
   assert.deepEqual(results.map((result) => result.subjectCode).sort(), [
     "AHT-000",
     "AHT-001",
   ]);
   assert.notEqual(results[0]!.subjectId, results[1]!.subjectId);
-  await seed("systemCounters/subjects", { lastAllocatedNumber: 999 });
-  const next = await allocate(anonymous("three"), "three", firstRequest);
+  assert.equal(
+    (await getDoc(doc(anonymous(), "systemCounters/subjects"))).data()!
+      .lastAllocatedNumber,
+    1,
+  );
+  context.diagnostic("Concurrent AHT-000/AHT-001 allocations passed; checking rollover");
+  await seed("systemCounters/subjects", { lastAllocatedNumber: 998 });
+  const lastThreeDigits = await allocate(anonymous("three"), "three", firstRequest);
+  assert.equal(lastThreeDigits.subjectNumber, 999);
+  assert.equal(lastThreeDigits.subjectCode, "AHT-999");
+  const next = await allocate(anonymous("three"), "three", secondRequest);
+  assert.equal(next.subjectNumber, 1000);
   assert.equal(next.subjectCode, "AHT-1000");
 });
 
