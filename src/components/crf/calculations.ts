@@ -37,8 +37,12 @@ export function parseDurationPart(input: string, max?: number): number | null {
 }
 
 export function getTreatmentDuration(yearsInput: string, monthsInput: string) {
-  const years = parseDurationPart(yearsInput);
-  const months = parseDurationPart(monthsInput, 11);
+  const yearsText = yearsInput.trim();
+  const monthsText = monthsInput.trim();
+  if (!yearsText && !monthsText) return null;
+
+  const years = yearsText ? parseDurationPart(yearsText) : monthsText ? 0 : null;
+  const months = parseDurationPart(monthsText, 11);
   if (years === null || months === null) return null;
   const totalMonths = years * 12 + months;
   return Number.isSafeInteger(totalMonths)
@@ -69,12 +73,16 @@ export function recalculateDerived(values: CrfDraftValues): CrfDraftValues {
 // A typed numeric data model for a future backend; no storage or network operation.
 export function toCrfValues(draft: CrfDraftValues): CrfValues {
   const values = recalculateDerived(draft);
+  const duration = getTreatmentDuration(
+    values.treatmentDurationYears,
+    values.treatmentDurationMonths,
+  );
   return {
     ...values,
-    treatmentDurationYears: parseDurationPart(values.treatmentDurationYears),
-    treatmentDurationMonths: parseDurationPart(
-      values.treatmentDurationMonths,
-      11,
-    ),
+    treatmentDurationYears:
+      duration?.years ?? parseDurationPart(values.treatmentDurationYears),
+    treatmentDurationMonths:
+      duration?.months ??
+      parseDurationPart(values.treatmentDurationMonths, 11),
   };
 }

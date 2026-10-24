@@ -121,10 +121,11 @@ test("BMI is numeric, rounded to one decimal, recomputed and cleared for missing
   assert.equal(recalculateDerived(draft).bmi, null);
 });
 
-test("duration model preserves numeric years, months and total months including zeros", () => {
+test("duration model preserves numeric years, months and total months including blank years normalized to zero", () => {
   for (const [years, months, total, label] of [
     ["3", "4", 40, "3 yıl 4 aydır"],
     ["0", "4", 4, "0 yıl 4 aydır"],
+    ["", "4", 4, "0 yıl 4 aydır"],
     ["1", "0", 12, "1 yıl 0 aydır"],
     ["0", "0", 0, "0 yıl 0 aydır"],
   ] as const) {
@@ -139,7 +140,7 @@ test("duration model preserves numeric years, months and total months including 
   }
 });
 
-test("duration bounds reject negative/fractional years, months outside 0-11 and partial input never creates a false total", () => {
+test("duration bounds reject invalid values, keep both blanks empty, and do not invent a total for missing months", () => {
   const year = field("treatmentDurationYears"),
     month = field("treatmentDurationMonths");
   for (const value of ["-1", "1.5", "Infinity", "100000000000000000"])
@@ -149,10 +150,18 @@ test("duration bounds reject negative/fractional years, months outside 0-11 and 
   assert.equal(validateField(year, "0"), undefined);
   assert.equal(validateField(month, "11"), undefined);
   assert.equal(validateField(month, ""), undefined);
+
+  assert.deepEqual(getTreatmentDuration("", "4"), {
+    years: 0,
+    months: 4,
+    totalMonths: 4,
+  });
+  assert.equal(describeTreatmentDuration("", "4"), "0 yıl 4 aydır");
+  assert.equal(getTreatmentDuration("", ""), null);
+  assert.equal(describeTreatmentDuration("", ""), "");
+
   for (const [years, months] of [
     ["3", ""],
-    ["", "4"],
-    ["", ""],
     ["-1", "4"],
     ["3", "12"],
   ]) {
