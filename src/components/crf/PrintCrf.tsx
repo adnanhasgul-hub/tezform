@@ -85,12 +85,14 @@ export function PrintCrf({
   values,
   subjectCode,
   blocked = false,
+  closeLabel = "Forma Dön",
 }: {
   preview: boolean;
   onClose: () => void;
   values?: CrfDraftValues;
   subjectCode?: string;
   blocked?: boolean;
+  closeLabel?: string;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -111,7 +113,7 @@ export function PrintCrf({
         <p>A4 · Bölüm 4 dahil tüm bölümler</p>
         <div>
           <button className="button secondary" type="button" onClick={onClose}>
-            Forma Dön
+            {closeLabel}
           </button>
           <button
             className="button primary"
