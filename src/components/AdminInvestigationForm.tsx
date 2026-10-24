@@ -17,7 +17,7 @@ import {
 import {
   ambiguousLegacyLocations,
   clearInactiveDvt,
-  legacyDvtWarning,
+  legacyDvtMessage,
   resolvedDvt,
 } from "../services/dvtModel";
 interface Props {
@@ -43,7 +43,9 @@ export function AdminInvestigationForm({
   const sections = fullEdit
     ? crfSections
     : crfSections.filter((section) => section.entryRole === "admin");
-  const state = investigationState(investigationValues(values));
+  const state = legacyLocations.length && (!legacyConfirmed || !resolvedDvt(values))
+    ? "partial"
+    : investigationState(investigationValues(values));
   function update(id: FieldId, value: CrfValue) {
     if (
       id === "dvtSide" ||
@@ -107,7 +109,7 @@ export function AdminInvestigationForm({
       )}
       {legacyLocations.length > 0 && (
         <div className="save-error" role="alert">
-          <p>{legacyDvtWarning}</p>
+          <p>{legacyDvtMessage(subject.investigations.dvtSide ?? [])}</p>
           <p>Eski ortak lokalizasyonlar: {legacyLocations.join(", ")}</p>
           <label>
             <input

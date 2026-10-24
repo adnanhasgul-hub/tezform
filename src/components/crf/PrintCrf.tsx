@@ -156,8 +156,8 @@ export function PrintCrf({
             </h2>
             {section.number === 4 && values?.legacyDvtLocations?.length ? (
               <p className="print-field-hint">
-                Eski veri yapısı: her iki taraf için ortak DVT lokalizasyonları:{" "}
-                {values.legacyDvtLocations.join(", ")}. Sağ ve Sol dağılımı
+                Eski veri yapısından kalan ortak DVT lokalizasyonları:{" "}
+                {values.legacyDvtLocations.join(", ")}. Taraflara dağılımı
                 henüz doğrulanmamıştır.
               </p>
             ) : null}

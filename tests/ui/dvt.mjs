@@ -57,6 +57,16 @@ export async function checkDvt(browser, origin) {
     await page.evaluate(() => window.renderDvt({ dvtSide: ["Sağ"], dvtLocations: ["Popliteal"] }));
     await right.getByLabel("Popliteal", { exact: true }).waitFor();
     assert(await right.getByLabel("Popliteal", { exact: true }).isChecked());
+    await page.evaluate(() => window.renderDvt({ dvtSide: [], dvtLocations: ["Femoral"] }));
+    await page.getByText("Bu kayıt eski veri yapısında tarafı belirtilmemiş DVT lokalizasyonu içeriyor.", { exact: false }).waitFor();
+    await page.getByText("Eski ortak lokalizasyonlar: Femoral", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Formu Kaydet", exact: true }).click();
+    assert.equal(await page.evaluate(() => window.dvtState.calls), 1);
+    await page.evaluate(() => window.renderDvt({ dvtSide: [], dvtLocations: ["Femoral"] }, "view"));
+    await page.getByText("Eski ortak lokalizasyonlar: Femoral", { exact: true }).waitFor();
+    await page.evaluate(() => window.renderDvt({ dvtSide: [], dvtLocations: ["Femoral"] }, "print"));
+    await page.getByText("Eski veri yapısından kalan ortak DVT lokalizasyonları:", { exact: false }).waitFor();
+    assert.equal(await page.locator('[data-print-field="dvtRightLocations"] .paper-checkbox').evaluateAll(nodes => nodes.every(node => node.textContent.trim() === "")), true);
     await page.evaluate(() => window.renderDvt({ dvtSide: ["Sağ", "Sol"], dvtLocations: ["Popliteal"] }));
     await page.getByText("Eski ortak lokalizasyonlar: Popliteal", { exact: true }).waitFor();
     assert(!(await right.getByLabel("Popliteal", { exact: true }).isChecked()));

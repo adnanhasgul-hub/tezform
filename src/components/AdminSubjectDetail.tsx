@@ -13,7 +13,7 @@ import {
   getFieldForDisplay,
 } from "./crf/sections";
 
-import { legacyDvtWarning } from "../services/dvtModel";
+import { legacyDvtMessage } from "../services/dvtModel";
 
 interface Props {
   subject: AdminSubjectSummary;
@@ -93,7 +93,7 @@ export function AdminSubjectDetail({ subject, onBack }: Props) {
 
       {values.legacyDvtLocations?.length ? (
         <div className="save-error" role="note">
-          <p>{legacyDvtWarning}</p>
+          <p>{legacyDvtMessage(values.dvtSide)}</p>
           <p>
             Eski ortak lokalizasyonlar: {values.legacyDvtLocations.join(", ")}
           </p>

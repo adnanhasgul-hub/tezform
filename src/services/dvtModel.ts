@@ -7,6 +7,12 @@ import type {
 export const legacyDvtWarning =
   "Bu kayıt eski veri yapısında her iki taraf için ortak DVT lokalizasyonu içeriyor. Sağ ve Sol lokalizasyonlarını ayrı ayrı doğrulayınız.";
 
+export function legacyDvtMessage(sides: readonly string[]): string {
+  return sides.includes("Sağ") && sides.includes("Sol")
+    ? legacyDvtWarning
+    : "Bu kayıt eski veri yapısında tarafı belirtilmemiş DVT lokalizasyonu içeriyor. DVT tarafını ve ilgili lokalizasyonları doğrulayınız.";
+}
+
 type DvtValues = Pick<
   InvestigationValues,
   "dvtSide" | "dvtRightLocations" | "dvtLeftLocations"
@@ -16,13 +22,13 @@ function hasCanonicalLocations(values: StoredInvestigationValues): boolean {
   return "dvtRightLocations" in values || "dvtLeftLocations" in values;
 }
 
-/** Historical common locations must never be guessed across two selected sides. */
+/** Historical common locations need review unless exactly one known side exists. */
 export function ambiguousLegacyLocations(
   values: StoredInvestigationValues,
 ): string[] {
   return !hasCanonicalLocations(values) &&
-    values.dvtSide?.includes("Sağ") &&
-    values.dvtSide.includes("Sol") &&
+    !(values.dvtSide?.length === 1 &&
+      (values.dvtSide[0] === "Sağ" || values.dvtSide[0] === "Sol")) &&
     Array.isArray(values.dvtLocations)
     ? [...values.dvtLocations]
     : [];

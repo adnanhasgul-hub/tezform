@@ -145,3 +145,17 @@ test("completion requires locations only for selected sides while all 19 lab req
   delete (legacy as Partial<InvestigationValues>).dvtLeftLocations;
   assert.equal(investigationState(legacy), "partial");
 });
+
+test("legacy partial locations without a side remain visible as unresolved data instead of being silently dropped", () => {
+  const stored = { dvtSide: [], dvtLocations: ["Femoral"] };
+  assert.deepEqual(ambiguousLegacyLocations(stored), ["Femoral"]);
+  assert.equal(investigationState(stored), "partial");
+  const draft = createAdminRecordDraft({
+    publicValues: createEmptyCrf() as unknown as Parameters<typeof createAdminRecordDraft>[0]["publicValues"],
+    investigations: stored,
+  });
+  assert.deepEqual(draft.legacyDvtLocations, ["Femoral"]);
+  assert.deepEqual(draft.dvtRightLocations, []);
+  assert.deepEqual(draft.dvtLeftLocations, []);
+  assert.equal(resolvedDvt(draft), false);
+});
