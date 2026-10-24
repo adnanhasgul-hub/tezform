@@ -1,3 +1,4 @@
+import { checkAdmin } from "./admin.mjs";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -53,7 +54,7 @@ try {
   await page.route("**/ui-harness", (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: '<!doctype html><html lang="tr"><head><link rel="stylesheet" href="/src/index.css?direct"></head><body><div id="ui-root"></div></body></html>',
+      body: '<!doctype html><html lang="tr"><head><link rel="stylesheet" href="/src/index.css?direct"><link rel="stylesheet" href="/src/admin.css?direct"></head><body><div id="ui-root"></div></body></html>',
     }),
   );
   await page.route("https://**", (route) => route.abort());
@@ -67,7 +68,10 @@ try {
       await page.locator(`#crf-${id} input[type=radio]`).first().check();
     };
     const chooseCheckbox = async (id, label) => {
-      await page.locator(`#crf-${id}`).getByLabel(label, { exact: true }).check();
+      await page
+        .locator(`#crf-${id}`)
+        .getByLabel(label, { exact: true })
+        .check();
     };
 
     await page.locator("#crf-nationalId").fill("UI-DEMO");
@@ -120,7 +124,9 @@ try {
 
     // The two approved optional fields remain intentionally blank.
     await chooseFirstRadio("bleedingDayDose");
-    await page.locator("#crf-investigatorName").selectOption({ label: "Dr. Mehmet" });
+    await page
+      .locator("#crf-investigatorName")
+      .selectOption({ label: "Dr. Mehmet" });
   }
 
   await page.goto(`${origin}/ui-harness`);
@@ -206,11 +212,17 @@ try {
     .getByRole("button", { name: /^Bölüm 7:/ });
   assert(await section7.isDisabled());
   await page.getByRole("button", { name: /Sonraki Bölüm/ }).click();
-  await page.getByText("Bu alan zorunludur.", { exact: true }).first().waitFor();
+  await page
+    .getByText("Bu alan zorunludur.", { exact: true })
+    .first()
+    .waitFor();
   assert.equal(await page.locator("#crf-nationalId").count(), 1);
 
   await fillRequiredPublicAnswers();
-  assert.equal(await page.locator("#crf-bleedingOnsetInterval").inputValue(), "");
+  assert.equal(
+    await page.locator("#crf-bleedingOnsetInterval").inputValue(),
+    "",
+  );
   assert.equal(await page.locator("#crf-researchNotes").inputValue(), "");
   const save = page.getByRole("button", { name: "Formu Kaydet", exact: true });
   await save.click();
@@ -319,10 +331,12 @@ try {
   );
   await page.goto(origin);
   assert.equal(
-    await page.getByRole("heading", {
-      name: "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu",
-      exact: true,
-    }).count(),
+    await page
+      .getByRole("heading", {
+        name: "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu",
+        exact: true,
+      })
+      .count(),
     0,
   );
   await page
@@ -359,6 +373,102 @@ try {
   console.log(
     "PASS duplicate center title removed; actual admin guard/wrong alias/no email; blank print unmarked; required answers pass before missing Firebase error; no runtime errors",
   );
+  // Admin editors use the same clinical controls; persistence is injected only here.
+  await page.goto(`${origin}/ui-harness`);
+  await page.evaluate(async () => {
+    const { injectIntoGlobalHook } = await import("/@react-refresh");
+    injectIntoGlobalHook(window);
+    window.$RefreshReg$ = () => {};
+    window.$RefreshSig$ = () => (type) => type;
+    const [
+      { default: React },
+      { default: DOM },
+      { AdminInvestigationForm },
+      { AdminDeleteDialog },
+      { reauthenticatedDelete },
+      { createEmptyCrf },
+      { toCrfValues },
+    ] = await Promise.all([
+      import("/node_modules/.vite/deps/react.js"),
+      import("/node_modules/.vite/deps/react-dom_client.js"),
+      import("/src/components/AdminInvestigationForm.tsx"),
+      import("/src/components/AdminDeleteDialog.tsx"),
+      import("/src/services/adminDeletion.ts"),
+      import("/src/components/crf/sections.ts"),
+      import("/src/components/crf/calculations.ts"),
+    ]);
+    const subject = {
+      id: "aaaaaaaaaaaaaaaaaaaa",
+      subjectCode: "AHT-TEST",
+      subjectNumber: 0,
+      status: "pending_completion",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      publicValues: toCrfValues(createEmptyCrf()),
+      investigations: {},
+    };
+    const state = (window.adminTest = { saved: null, deletes: 0 });
+    async function persist(id, draft, full) {
+      state.saved = { id, draft, full };
+      subject.investigations = { bun: draft.bun };
+    }
+    function Harness() {
+      const [generation, setGeneration] = React.useState(0);
+      const [deleting, setDeleting] = React.useState(false);
+      return React.createElement(
+        "div",
+        null,
+        React.createElement(AdminInvestigationForm, {
+          key: generation,
+          subject,
+          onBack: () => {},
+          onCompleted: () => setGeneration((v) => v + 1),
+          saveRecord: persist,
+        }),
+        React.createElement(
+          "button",
+          { onClick: () => setDeleting(true) },
+          "Silme Onayını Aç",
+        ),
+        deleting &&
+          React.createElement(AdminDeleteDialog, {
+            subject,
+            onClose: () => {},
+            onDeleted: async () => {},
+            remove: async (id, password) =>
+              reauthenticatedDelete(
+                password,
+                async () => {
+                  throw Error("synthetic wrong password");
+                },
+                async () => {
+                  state.deletes++;
+                },
+              ),
+          }),
+      );
+    }
+    DOM.createRoot(document.querySelector("#ui-root")).render(
+      React.createElement(Harness),
+    );
+  });
+  await page.locator("#crf-bun").fill("15");
+  await page.getByRole("button", { name: "Formu Kaydet", exact: true }).click();
+  await page.waitForFunction(() => window.adminTest.saved !== null);
+  assert.equal(await page.locator("#crf-bun").inputValue(), "15");
+  await page.getByRole("button", { name: "Silme Onayını Aç" }).click();
+  await page.getByLabel("Onay için AHT-TEST yazın").fill("AHT-TEST");
+  await page.getByLabel("Yönetici şifresi").fill("synthetic-invalid");
+  await page.getByRole("button", { name: "Kalıcı Olarak Sil" }).click();
+  await page
+    .getByText("Silme işlemi tamamlanamadı.", { exact: false })
+    .waitFor();
+  assert.equal(await page.evaluate(() => window.adminTest.deletes), 0);
+  assert.equal(await page.getByLabel("Yönetici şifresi").inputValue(), "");
+  console.log(
+    "PASS admin partial-save remount preserves values; failed real-auth boundary never starts delete; password state cleared",
+  );
+  await page.goto(`${origin}/admin`);
   // Stress-print all fields with synthetic values, including the future admin section.
   await page.evaluate(async () => {
     const [
@@ -396,6 +506,7 @@ try {
     values.treatmentDurationMonths = "4";
     document.querySelector("#root").remove();
     const host = document.createElement("div");
+    host.className = "app-shell admin-shell";
     document.body.append(host);
     DOM.createRoot(host).render(
       React.createElement(PrintCrf, {
@@ -417,6 +528,18 @@ try {
     ),
   );
   await page.emulateMedia({ media: "print" });
+  assert.equal(
+    await page
+      .locator(".print-view")
+      .evaluate((node) => node.closest(".app-shell") === null),
+    true,
+  );
+  assert((await page.locator(".print-sheet").boundingBox()).height > 100);
+  assert((await page.locator(".print-sheet").innerText()).includes("AHT-TEST"));
+  assert.equal(
+    await page.locator('[data-print-field="bun"] .paper-answer').innerText(),
+    "3",
+  );
   await page.pdf({
     path: "/tmp/tezform-spark-all-fields.pdf",
     preferCSSPageSize: true,
@@ -424,6 +547,7 @@ try {
   console.log(
     "PASS all 70 fields stress print with synthetic data; duration total included; no allocation performed",
   );
+  await checkAdmin(browser, origin);
 } finally {
   await browser?.close();
   vite.kill("SIGTERM");

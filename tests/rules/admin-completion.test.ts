@@ -1,3 +1,19 @@
+import {
+  createEmptyCrf,
+  publicSections,
+} from "../../src/components/crf/sections.ts";
+import { toCrfValues } from "../../src/components/crf/calculations.ts";
+function publicValues() {
+  const values = toCrfValues(createEmptyCrf());
+  return {
+    ...Object.fromEntries(
+      publicSections.flatMap((section) =>
+        section.fields.map((field) => [field.id, values[field.id]]),
+      ),
+    ),
+    treatmentDurationTotalMonths: null,
+  };
+}
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, beforeEach, test } from "node:test";
@@ -76,7 +92,7 @@ function pendingSubject() {
     updatedAt: Timestamp.fromMillis(1_000),
     createdByUid: "collector-one",
     requestId,
-    publicValues: { protected: "unchanged" },
+    publicValues: publicValues(),
     investigations: {},
   };
 }
@@ -107,7 +123,10 @@ function investigations() {
   };
 }
 
-async function completeWith(db: ReturnType<typeof password>, values = investigations()) {
+async function completeWith(
+  db: ReturnType<typeof password>,
+  values = investigations(),
+) {
   return updateDoc(doc(db, subjectPath), {
     investigations: values,
     status: "completed",
@@ -122,7 +141,7 @@ test("authorized admin can complete a pending subject with the exact Section 4 s
   assert.equal(saved.status, "completed");
   assert.deepEqual(saved.investigations.dvtLocations, ["Femoral", "Popliteal"]);
   assert.equal(saved.investigations.creatinine, "0.9");
-  assert.deepEqual(saved.publicValues, { protected: "unchanged" });
+  assert.deepEqual(saved.publicValues, publicValues());
 });
 
 test("anonymous and non-admin users cannot complete Section 4", async () => {
@@ -136,17 +155,32 @@ test("admin completion rejects incomplete, extra or invalid Section 4 data", asy
   const { bun: _bun, ...missingBun } = complete;
   await assertFails(completeWith(admin, missingBun as typeof complete));
   await assertFails(
+    completeWith(admin, { ...complete, bun: 42 } as unknown as typeof complete),
+  );
+  await assertFails(
+    completeWith(admin, { ...complete, bun: [] } as unknown as typeof complete),
+  );
+  await assertFails(
+    completeWith(admin, {
+      ...complete,
+      bun: null,
+    } as unknown as typeof complete),
+  );
+  await assertFails(
     completeWith(admin, { ...complete, dvtSide: ["Sağ", "Bilinmeyen"] }),
   );
   await assertFails(
     completeWith(admin, { ...complete, dvtLocations: ["Femoral", "Femoral"] }),
   );
   await assertFails(
-    completeWith(admin, { ...complete, unauthorized: "extra" } as typeof complete),
+    completeWith(admin, {
+      ...complete,
+      unauthorized: "extra",
+    } as typeof complete),
   );
 });
 
-test("admin completion cannot alter patient-entered or allocation fields", async () => {
+test("admin completion cannot inject malformed public data or alter allocation fields", async () => {
   const admin = password("admin-user");
   await assertFails(
     updateDoc(doc(admin, subjectPath), {
@@ -180,10 +214,10 @@ test("authorized admin can edit only Section 4 after completion", async () => {
   const saved = (await assertSucceeds(getDoc(doc(admin, subjectPath)))).data()!;
   assert.equal(saved.status, "completed");
   assert.equal(saved.investigations.bun, "99");
-  assert.deepEqual(saved.publicValues, { protected: "unchanged" });
+  assert.deepEqual(saved.publicValues, publicValues());
 });
 
-test("completed Section 4 edit cannot change status, public data or allocation fields", async () => {
+test("completed Section 4 edit rejects malformed public data, identity edits and false status", async () => {
   const admin = password("admin-user");
   await assertSucceeds(completeWith(admin));
 

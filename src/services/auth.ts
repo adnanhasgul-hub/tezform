@@ -1,4 +1,6 @@
 import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
   inMemoryPersistence,
   onAuthStateChanged,
   setPersistence,
@@ -157,4 +159,17 @@ export function observeAdminSession(
 export async function logoutAdmin(): Promise<void> {
   const instance = await memoryAuth();
   await signOut(instance);
+}
+
+export async function reauthenticateAdmin(password: string): Promise<void> {
+  const instance = await memoryAuth();
+  const user = instance.currentUser;
+  if (!user || !user.email || !password || !(await isAuthorizedAdmin(user)))
+    throw new Error("Reauthentication required");
+  await reauthenticateWithCredential(
+    user,
+    EmailAuthProvider.credential(user.email, password),
+  );
+  await user.getIdToken(true);
+  if (!(await isAuthorizedAdmin(user))) throw new Error("Unauthorized");
 }

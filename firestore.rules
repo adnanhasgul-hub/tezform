@@ -26,7 +26,7 @@ service cloud.firestore {
     }
     function validCounter(data) {
       return data.keys().hasAll(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
-        && data.keys().hasOnly(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
+        && data.keys().size() == 4
         && validNumber(data.lastAllocatedNumber)
         && subjectId(data.lastSubjectId) && uuid(data.lastRequestId)
         && data.lastCreatedByUid == request.auth.uid;
@@ -34,7 +34,12 @@ service cloud.firestore {
     function validPublic(data) {
       return data is map
         && data.keys().hasAll(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
-        && data.keys().hasOnly(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
+        && validPublicValues(data);
+    }
+    // All 50 canonical keys are read/type-checked below. Missing keys deny;
+    // the exact count also excludes extra keys, without repeating a long list.
+    function validPublicValues(data) {
+      return data is map && data.keys().size() == 50
         && data.nationalId is string
         && data.protocolDate is string
         && data.sex is string
@@ -96,7 +101,7 @@ service cloud.firestore {
     }
     function validSubject(data) {
       return data.keys().hasAll(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
-        && data.keys().hasOnly(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
+        && data.keys().size() == 9
         && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber)
         && data.status == 'pending_completion'
         && data.createdAt == request.time && data.updatedAt == request.time
@@ -104,58 +109,133 @@ service cloud.firestore {
         && data.investigations is map && data.investigations.size() == 0
         && validPublic(data.publicValues);
     }
-    function shortText(value) {
-      return value is string && value.size() <= 32;
+    function shortText(value, completed) {
+      // matches() accepts strings only; other types error and therefore deny.
+      return value.size() <= 32 && (completed
+        ? value.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*') : value is string);
     }
-    function validInvestigations(data) {
+    function validInvestigations(data, completed) {
       return data is map
         && data.keys().hasAll(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
-        && data.keys().hasOnly(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
+        && data.keys().size() == 21
         && data.dvtLocations is list
         && data.dvtLocations.toSet().size() == data.dvtLocations.size()
         && data.dvtLocations.hasOnly(['İliak', 'Femoral', 'Popliteal', 'Üst Ekstremite', 'IVC', 'SVC', 'Juguler'])
         && data.dvtSide is list
         && data.dvtSide.toSet().size() == data.dvtSide.size()
         && data.dvtSide.hasOnly(['Sağ', 'Sol'])
-        && shortText(data.bun)
-        && shortText(data.creatinine)
-        && shortText(data.egfr)
-        && shortText(data.calcium)
-        && shortText(data.sodium)
-        && shortText(data.potassium)
-        && shortText(data.totalBilirubin)
-        && shortText(data.directBilirubin)
-        && shortText(data.ast)
-        && shortText(data.alt)
-        && shortText(data.totalProtein)
-        && shortText(data.albumin)
-        && shortText(data.wbc)
-        && shortText(data.hemoglobin)
-        && shortText(data.platelets)
-        && shortText(data.hct)
-        && shortText(data.pt)
-        && shortText(data.inr)
-        && shortText(data.aptt);
+        && (!completed || (data.dvtLocations.size() > 0 && data.dvtSide.size() > 0))
+        && shortText(data.bun, completed)
+        && shortText(data.creatinine, completed)
+        && shortText(data.egfr, completed)
+        && shortText(data.calcium, completed)
+        && shortText(data.sodium, completed)
+        && shortText(data.potassium, completed)
+        && shortText(data.totalBilirubin, completed)
+        && shortText(data.directBilirubin, completed)
+        && shortText(data.ast, completed)
+        && shortText(data.alt, completed)
+        && shortText(data.totalProtein, completed)
+        && shortText(data.albumin, completed)
+        && shortText(data.wbc, completed)
+        && shortText(data.hemoglobin, completed)
+        && shortText(data.platelets, completed)
+        && shortText(data.hct, completed)
+        && shortText(data.pt, completed)
+        && shortText(data.inr, completed)
+        && shortText(data.aptt, completed);
     }
-    function validAdminCompletion(before, after) {
-      return admin()
-        && before.status == 'pending_completion'
-        && after.status == 'completed'
-        && after.diff(before).affectedKeys().hasOnly(['status', 'updatedAt', 'investigations'])
-        && after.updatedAt == request.time
-        && validInvestigations(after.investigations);
+    function investigationsComplete(data) {
+      return data.dvtLocations.size() > 0 && data.dvtSide.size() > 0
+        && data.bun.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.creatinine.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.egfr.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.calcium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.sodium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.potassium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.totalBilirubin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.directBilirubin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.ast.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.alt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.totalProtein.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.albumin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.wbc.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.hemoglobin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.platelets.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.hct.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.pt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.inr.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.aptt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        ;
     }
-    function validAdminInvestigationEdit(before, after) {
+    function validAdminEdit(before, after) {
       return admin()
-        && before.status == 'completed'
-        && after.status == 'completed'
-        && after.diff(before).affectedKeys().hasOnly(['updatedAt', 'investigations'])
+        && after.diff(before).affectedKeys().hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
         && after.updatedAt == request.time
-        && validInvestigations(after.investigations);
+        && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublicValues(after.publicValues))
+        && (after.status == 'completed'
+          ? validInvestigations(after.investigations, true)
+          : after.status == 'pending_completion'
+            && validInvestigations(after.investigations, false)
+            && !investigationsComplete(after.investigations));
+    }
+    function recentAdmin() {
+      return admin() && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.auth_time is int
+        && request.time.toMillis() / 1000 - request.auth.token.auth_time >= 0
+        && request.time.toMillis() / 1000 - request.auth.token.auth_time <= 300;
+    }
+    function poolNumbers() {
+      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
+      return exists(path) ? get(path).data.numbers : [];
+    }
+    function validPool(data) {
+      return data.keys().hasAll(['numbers', 'lastSubjectId', 'operation', 'insertIndex'])
+        && data.keys().size() == 4
+        && data.numbers is list && subjectId(data.lastSubjectId) && data.insertIndex is int;
+    }
+    function validAllocationNumber(subject, number, previous, next) {
+      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
+      let free = poolNumbers();
+      return free.size() > 0
+        ? number == free[0] && next == previous
+          && validPool(getAfter(path).data)
+          && getAfter(path).data.operation == 'allocate'
+          && getAfter(path).data.lastSubjectId == subject
+          && getAfter(path).data.insertIndex == -1
+          && getAfter(path).data.numbers == free.removeAll([number])
+        : number == previous + 1 && next == number
+          && (exists(path) ? getAfter(path).data == get(path).data : !existsAfter(path));
+    }
+    // The previous list is sorted by induction. Removing the inserted value must
+    // reproduce it exactly; checking adjacent values proves sorted insertion.
+    function validRelease(subject, data) {
+      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
+      let free = poolNumbers();
+      let after = getAfter(path).data;
+      let index = after.insertIndex;
+      let receiptPath = /databases/$(database)/documents/submissionRequests/$(data.createdByUid)/requests/$(data.requestId);
+      return recentAdmin() && subjectId(subject) && validNumber(data.subjectNumber)
+        && data.subjectNumber <= get(/databases/$(database)/documents/systemCounters/subjects).data.lastAllocatedNumber
+        && !existsAfter(/databases/$(database)/documents/subjects/$(subject))
+        && validPool(after) && after.operation == 'release' && after.lastSubjectId == subject
+        && !free.hasAny([data.subjectNumber])
+        && after.numbers.size() == free.size() + 1
+        && after.numbers.toSet().size() == after.numbers.size()
+        && index >= 0 && index < after.numbers.size()
+        && after.numbers[index] == data.subjectNumber
+        && after.numbers.removeAll([data.subjectNumber]) == free
+        && (index == 0 || after.numbers[index - 1] < data.subjectNumber)
+        && (index == after.numbers.size() - 1 || after.numbers[index + 1] > data.subjectNumber)
+        && get(receiptPath).data.subjectId == subject
+        && get(receiptPath).data.subjectNumber == data.subjectNumber
+        && !get(receiptPath).data.keys().hasAny(['revoked'])
+        && getAfter(receiptPath).data.revoked == true
+        && getAfter(receiptPath).data.diff(get(receiptPath).data).affectedKeys().hasOnly(['revoked']);
     }
     function validReceipt(data, requestId) {
       return data.keys().hasAll(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
-        && data.keys().hasOnly(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
+        && data.keys().size() == 4
         && subjectId(data.subjectId) && data.requestId == requestId && uuid(requestId)
         && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber);
     }
@@ -172,8 +252,7 @@ service cloud.firestore {
       return previousCounter.lastAllocatedNumber is int && previousCounter.lastAllocatedNumber >= -1
         && !exists(subjectPath) && !exists(receiptPath)
         && validCounter(nextCounter)
-        && number == previousCounter.lastAllocatedNumber + 1
-        && nextCounter.lastAllocatedNumber == number
+        && validAllocationNumber(subject, number, previousCounter.lastAllocatedNumber, nextCounter.lastAllocatedNumber)
         && nextCounter.lastSubjectId == subject && nextCounter.lastRequestId == requestId
         && nextSubject.createdByUid == request.auth.uid && nextSubject.requestId == requestId
         && nextSubject.subjectNumber == number && nextSubject.subjectCode == code(number)
@@ -184,19 +263,36 @@ service cloud.firestore {
       allow get: if anonymous() || admin();
       allow list, create, delete: if false;
       allow update: if anonymous() && validCounter(request.resource.data)
-        && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId, request.resource.data.lastAllocatedNumber);
+        && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId,
+          getAfter(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data.subjectNumber);
+    }
+    match /systemCounters/reusableSubjects {
+      allow get: if anonymous() || admin();
+      allow list, delete: if false;
+      allow create: if recentAdmin() && validRelease(request.resource.data.lastSubjectId,
+        get(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data);
+      allow update: if (recentAdmin() && validRelease(request.resource.data.lastSubjectId,
+        get(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data))
+        || (anonymous() && allocation(request.resource.data.lastSubjectId,
+          getAfter(/databases/$(database)/documents/systemCounters/subjects).data.lastRequestId,
+          getAfter(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data.subjectNumber));
     }
     match /subjects/{id} {
       allow get, list: if admin();
       allow create: if anonymous() && subjectId(id) && validSubject(request.resource.data)
         && allocation(id, request.resource.data.requestId, request.resource.data.subjectNumber);
-      allow update: if validAdminCompletion(resource.data, request.resource.data)
-        || validAdminInvestigationEdit(resource.data, request.resource.data);
-      allow delete: if false;
+      allow update: if validAdminEdit(resource.data, request.resource.data);
+      allow delete: if validRelease(id, resource.data);
     }
     match /submissionRequests/{uid}/requests/{id} {
-      allow get: if anonymous() && request.auth.uid == uid;
-      allow list, update, delete: if false;
+      allow get: if admin() || (anonymous() && request.auth.uid == uid
+        && (!exists(/databases/$(database)/documents/submissionRequests/$(uid)/requests/$(id))
+          || !resource.data.keys().hasAny(['revoked'])));
+      allow list, delete: if false;
+      allow update: if recentAdmin()
+        && uid == get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data.createdByUid
+        && id == get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data.requestId
+        && validRelease(resource.data.subjectId, get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data);
       allow create: if anonymous() && request.auth.uid == uid && validReceipt(request.resource.data, id)
         && allocation(request.resource.data.subjectId, id, request.resource.data.subjectNumber);
     }

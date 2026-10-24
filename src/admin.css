@@ -39,7 +39,7 @@
 
 .admin-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 20px;
 }
@@ -270,7 +270,7 @@
 
 .admin-detail-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -428,4 +428,42 @@
   .admin-detail-actions .button {
     width: 100%;
   }
+}
+
+.admin-action-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.admin-status-empty {
+  color: #991b1b;
+  background: #fee2e2;
+}
+.admin-status-partial {
+  color: #9a3412;
+  background: #ffedd5;
+}
+.admin-status-complete {
+  color: #166534;
+  background: #dcfce7;
+}
+.button.danger {
+  color: #991b1b;
+  border: 1px solid #dc2626;
+  background: #fff;
+}
+.admin-delete-dialog {
+  max-width: 560px;
+  max-height: 90dvh;
+  overflow: auto;
+  background: white;
+}
+.admin-delete-dialog label {
+  display: grid;
+  gap: 8px;
+  margin-block: 16px;
+}
+
+.admin-delete-dialog::backdrop {
+  background: #0f172a66;
 }

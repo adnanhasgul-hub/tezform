@@ -27,6 +27,7 @@ class AtomicMemoryStore implements RegistrationStore {
   counter: unknown | null = { lastAllocatedNumber: -1 };
   subjects = new Map<string, SubjectDocument>();
   receipts = new Map<string, RegistrationResult>();
+  free: number[] = [];
   ids = 0;
   transactions = 0;
   failCommit = false;
@@ -48,6 +49,11 @@ class AtomicMemoryStore implements RegistrationStore {
         getReceipt: async (uid, id) =>
           this.receipts.get(`${uid}/${id}`) ?? null,
         getCounter: async () => this.counter,
+        getFreeNumbers: async () => this.free,
+        consumeFreeNumber: (numbers) =>
+          writes.push(() => {
+            this.free = [...numbers];
+          }),
         createSubject: (id, data) =>
           writes.push(() => {
             this.subjects.set(id, structuredClone(data));
@@ -92,7 +98,9 @@ function createCompletePublicDraft() {
     } else if (field.kind === "radio" || field.kind === "select") {
       draft[field.id] =
         field.options.find((option) => option === "Hayır") ??
-        field.options.find((option) => option === "Kanama olmadı / Uygulanamaz") ??
+        field.options.find(
+          (option) => option === "Kanama olmadı / Uygulanamaz",
+        ) ??
         field.options[0]!;
     } else if (field.kind === "date") {
       draft[field.id] = "2026-10-24";
@@ -192,10 +200,10 @@ test("missing, decremented-invalid and exhausted counter values are never silent
   }
 });
 
-test("a removed subject never releases its code and a receipt retry does not recreate it", async () => {
+test("out-of-band subject removal alone does not release its code or recreate it on retry", async () => {
   const store = new AtomicMemoryStore();
   const first = await allocateSubject(store, "owner", requestA, values());
-  store.subjects.delete(first.subjectId); // Console/admin deletion simulation; clients have no delete permission.
+  store.subjects.delete(first.subjectId); // Out-of-band fixture removal; the authenticated deletion flow uses a tombstone instead.
   assert.deepEqual(
     await allocateSubject(store, "owner", requestA, values()),
     first,
@@ -265,4 +273,32 @@ test("Rules public-data whitelist stays in sync with the metadata-derived write 
     (JSON.parse(match[1]!) as string[]).sort(),
     Object.keys(values()).sort(),
   );
+});
+
+test("reusable allocations take the smallest released numbers before incrementing the high-water mark", async () => {
+  const store = new AtomicMemoryStore();
+  store.counter = { lastAllocatedNumber: 4 };
+  store.free = [2, 4];
+  const first = await allocateSubject(store, "one", requestA, values());
+  const second = await allocateSubject(store, "two", requestA, values());
+  const third = await allocateSubject(store, "three", requestA, values());
+  assert.deepEqual(
+    [first.subjectNumber, second.subjectNumber, third.subjectNumber],
+    [2, 4, 5],
+  );
+  assert.equal((store.counter as CounterDocument).lastAllocatedNumber, 5);
+  assert.equal(store.free.length, 0);
+});
+test("revoked receipt cannot return a deleted registration as success or allocate again", async () => {
+  const store = new AtomicMemoryStore();
+  const first = await allocateSubject(store, "one", requestA, values());
+  store.subjects.delete(first.subjectId);
+  store.receipts.set(
+    `one/${requestA}`,
+    Object.assign({ ...first }, { revoked: true }),
+  );
+  store.free = [0];
+  await assert.rejects(allocateSubject(store, "one", requestA, values()));
+  assert.deepEqual(store.free, [0]);
+  assert.equal(store.subjects.size, 0);
 });

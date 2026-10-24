@@ -3,7 +3,7 @@ name: Firestore Rules Tests (Emulator)
 on:
   workflow_dispatch:
   push:
-    branches: [rules-test]
+    branches: [rules-test, admin-record-management]
 
 permissions:
   contents: read

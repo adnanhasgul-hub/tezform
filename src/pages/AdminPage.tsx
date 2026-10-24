@@ -1,9 +1,12 @@
+import { createAdminRecordDraft } from "../services/adminModel";
+import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
+import {
+  investigationState,
+  investigationLabels,
+} from "../services/adminModel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminInvestigationForm } from "../components/AdminInvestigationForm";
-import {
-  AdminSubjectDetail,
-  createAdminRecordDraft,
-} from "../components/AdminSubjectDetail";
+import { AdminSubjectDetail } from "../components/AdminSubjectDetail";
 import { PrintCrf } from "../components/crf/PrintCrf";
 import {
   AdminLoginError,
@@ -18,8 +21,14 @@ import {
 } from "../services/adminRecords";
 import { adminUsernameAlias } from "../services/authPolicy";
 
-type StatusFilter = "all" | "pending_completion" | "completed";
-type RecordMode = "view" | "complete" | "edit" | "print";
+type StatusFilter = "all" | "empty" | "partial" | "complete";
+type RecordMode =
+  | "view"
+  | "complete"
+  | "edit"
+  | "full-edit"
+  | "print"
+  | "delete";
 
 interface RecordSelection {
   id: string;
@@ -35,10 +44,6 @@ function formatDate(value: Date | null) {
   return value ? dateFormatter.format(value) : "—";
 }
 
-function statusLabel(status: AdminSubjectSummary["status"]) {
-  return status === "completed" ? "Tamamlandı" : "Tamamlanmayı Bekliyor";
-}
-
 export function AdminPage() {
   const [session, setSession] = useState<AdminSession>({ status: "checking" });
   const [username, setUsername] = useState(adminUsernameAlias);
@@ -51,8 +56,6 @@ export function AdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selection, setSelection] = useState<RecordSelection | null>(null);
-
-  useEffect(() => observeAdminSession(setSession), []);
 
   const refreshSubjects = useCallback(async () => {
     setLoadingSubjects(true);
@@ -68,18 +71,23 @@ export function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (session.status === "authorized") void refreshSubjects();
-    else {
-      setSubjects([]);
-      setSelection(null);
-    }
-  }, [session.status, refreshSubjects]);
+  useEffect(
+    () =>
+      observeAdminSession((next) => {
+        setSession(next);
+        if (next.status === "authorized") void refreshSubjects();
+        else {
+          setSubjects([]);
+          setSelection(null);
+        }
+      }),
+    [refreshSubjects],
+  );
 
   const selectedSubject = useMemo(
     () =>
       selection
-        ? subjects.find((subject) => subject.id === selection.id) ?? null
+        ? (subjects.find((subject) => subject.id === selection.id) ?? null)
         : null,
     [selection, subjects],
   );
@@ -87,11 +95,15 @@ export function AdminPage() {
   const counts = useMemo(
     () => ({
       total: subjects.length,
-      pending: subjects.filter(
-        (subject) => subject.status === "pending_completion",
+      empty: subjects.filter(
+        (subject) => investigationState(subject.investigations) === "empty",
       ).length,
-      completed: subjects.filter((subject) => subject.status === "completed")
-        .length,
+      partial: subjects.filter(
+        (subject) => investigationState(subject.investigations) === "partial",
+      ).length,
+      completed: subjects.filter(
+        (subject) => investigationState(subject.investigations) === "complete",
+      ).length,
     }),
     [subjects],
   );
@@ -100,11 +112,16 @@ export function AdminPage() {
     const needle = search.trim().toLocaleUpperCase("tr-TR");
     return subjects.filter((subject) => {
       const matchesStatus =
-        statusFilter === "all" || subject.status === statusFilter;
+        statusFilter === "all" ||
+        investigationState(subject.investigations) === statusFilter;
       const matchesSearch =
         !needle ||
         subject.subjectCode.toLocaleUpperCase("tr-TR").includes(needle) ||
-        String(subject.subjectNumber).includes(needle.replace(/\D/g, ""));
+        (subject.publicValues.investigatorName || "")
+          .toLocaleUpperCase("tr-TR")
+          .includes(needle) ||
+        (/^\d+$/.test(needle) &&
+          String(subject.subjectNumber).includes(needle));
       return matchesStatus && matchesSearch;
     });
   }, [search, statusFilter, subjects]);
@@ -176,7 +193,16 @@ export function AdminPage() {
 
         <main className="admin-dashboard">
           {selection && selectedSubject ? (
-            selection.mode === "print" ? (
+            selection.mode === "delete" ? (
+              <AdminDeleteDialog
+                subject={selectedSubject}
+                onClose={closeRecord}
+                onDeleted={async () => {
+                  await refreshSubjects();
+                  closeRecord();
+                }}
+              />
+            ) : selection.mode === "print" ? (
               <PrintCrf
                 preview
                 values={createAdminRecordDraft(selectedSubject)}
@@ -194,11 +220,9 @@ export function AdminPage() {
               <AdminInvestigationForm
                 key={`${selectedSubject.id}-${selection.mode}`}
                 subject={selectedSubject}
-                allowCompletedEdit={selection.mode === "edit"}
+                fullEdit={selection.mode === "full-edit"}
                 onBack={closeRecord}
-                onCompleted={() =>
-                  handleInvestigationSaved(selectedSubject.id)
-                }
+                onCompleted={() => handleInvestigationSaved(selectedSubject.id)}
               />
             )
           ) : (
@@ -209,8 +233,12 @@ export function AdminPage() {
                   <strong>{counts.total}</strong>
                 </article>
                 <article className="admin-stat-card">
-                  <span>Tamamlanmayı Bekleyen</span>
-                  <strong>{counts.pending}</strong>
+                  <span>Boş</span>
+                  <strong>{counts.empty}</strong>
+                </article>
+                <article className="admin-stat-card">
+                  <span>Devam Et</span>
+                  <strong>{counts.partial}</strong>
                 </article>
                 <article className="admin-stat-card">
                   <span>Tamamlanan</span>
@@ -218,7 +246,10 @@ export function AdminPage() {
                 </article>
               </section>
 
-              <section className="admin-records" aria-labelledby="records-title">
+              <section
+                className="admin-records"
+                aria-labelledby="records-title"
+              >
                 <div className="admin-records-heading">
                   <div>
                     <p className="eyebrow">ARAŞTIRMA KAYITLARI</p>
@@ -236,7 +267,7 @@ export function AdminPage() {
 
                 <div className="admin-filters">
                   <label>
-                    <span>Hasta kodu ile ara</span>
+                    <span>Hasta kodu veya hekim ile ara</span>
                     <input
                       type="search"
                       placeholder="Örn. AHT-001 veya 001"
@@ -253,10 +284,9 @@ export function AdminPage() {
                       }
                     >
                       <option value="all">Tümü</option>
-                      <option value="pending_completion">
-                        Tamamlanmayı Bekleyen
-                      </option>
-                      <option value="completed">Tamamlanan</option>
+                      <option value="empty">Boş</option>
+                      <option value="partial">Devam Et</option>
+                      <option value="complete">Tamamlandı</option>
                     </select>
                   </label>
                 </div>
@@ -273,6 +303,7 @@ export function AdminPage() {
                       <tr>
                         <th scope="col">Hasta Kodu</th>
                         <th scope="col">Kayıt Tarihi</th>
+                        <th scope="col">Hekim</th>
                         <th scope="col">Durum</th>
                         <th scope="col">İşlem</th>
                       </tr>
@@ -287,63 +318,85 @@ export function AdminPage() {
                           </td>
                           <td>{formatDate(subject.createdAt)}</td>
                           <td>
+                            {subject.publicValues.investigatorName?.trim() ||
+                              "—"}
+                          </td>
+                          <td>
                             <span
-                              className={`admin-status admin-status-${subject.status}`}
+                              className={`admin-status admin-status-${investigationState(subject.investigations)}`}
                             >
-                              {statusLabel(subject.status)}
+                              {
+                                investigationLabels[
+                                  investigationState(subject.investigations)
+                                ]
+                              }
                             </span>
                           </td>
                           <td>
-                            {subject.status === "completed" ? (
-                              <div
-                                className="admin-action-group"
-                                style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-                              >
-                                <button
-                                  type="button"
-                                  className="button secondary admin-action-button"
-                                  onClick={() =>
-                                    setSelection({ id: subject.id, mode: "edit" })
-                                  }
-                                >
-                                  Düzenle
-                                </button>
-                                <button
-                                  type="button"
-                                  className="button secondary admin-action-button"
-                                  onClick={() =>
-                                    setSelection({ id: subject.id, mode: "view" })
-                                  }
-                                >
-                                  Görüntüle
-                                </button>
-                                <button
-                                  type="button"
-                                  className="button primary admin-action-button"
-                                  onClick={() =>
-                                    setSelection({ id: subject.id, mode: "print" })
-                                  }
-                                >
-                                  Yazdır
-                                </button>
-                              </div>
-                            ) : (
+                            <div className="admin-action-group">
                               <button
-                                type="button"
                                 className="button secondary admin-action-button"
                                 onClick={() =>
-                                  setSelection({ id: subject.id, mode: "complete" })
+                                  setSelection({ id: subject.id, mode: "edit" })
                                 }
                               >
-                                Formu Tamamla
+                                {investigationState(subject.investigations) ===
+                                "empty"
+                                  ? "Formu Tamamla"
+                                  : investigationState(
+                                        subject.investigations,
+                                      ) === "partial"
+                                    ? "Devam Et"
+                                    : "Bölüm 4 Düzenle"}
                               </button>
-                            )}
+                              <button
+                                className="button secondary admin-action-button"
+                                onClick={() =>
+                                  setSelection({
+                                    id: subject.id,
+                                    mode: "full-edit",
+                                  })
+                                }
+                              >
+                                Tüm Formu Düzenle
+                              </button>
+                              <button
+                                className="button secondary admin-action-button"
+                                onClick={() =>
+                                  setSelection({ id: subject.id, mode: "view" })
+                                }
+                              >
+                                Görüntüle
+                              </button>
+                              <button
+                                className="button secondary admin-action-button"
+                                onClick={() =>
+                                  setSelection({
+                                    id: subject.id,
+                                    mode: "print",
+                                  })
+                                }
+                              >
+                                Yazdır
+                              </button>
+                              <button
+                                className="button danger admin-action-button"
+                                onClick={() =>
+                                  setSelection({
+                                    id: subject.id,
+                                    mode: "delete",
+                                  })
+                                }
+                              >
+                                Sil
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
                       {!loadingSubjects && filteredSubjects.length === 0 && (
                         <tr>
-                          <td className="admin-empty" colSpan={4}>
+                          <td className="admin-empty" colSpan={5}>
                             {subjects.length === 0
                               ? "Henüz hasta kaydı bulunmuyor."
                               : "Arama ve filtreye uygun kayıt bulunamadı."}
@@ -354,9 +407,8 @@ export function AdminPage() {
                   </table>
                 </div>
                 <p className="admin-list-note">
-                  Tamamlanan kayıtlarda “Görüntüle” Bölüm 1–7'nin tamamını açar.
-                  “Düzenle” yalnızca yöneticiye ait Bölüm 4 verilerini değiştirir.
-                  “Yazdır” doldurulmuş CRF yazdırma ekranını doğrudan açar.
+                  Bölüm 4 durumu kayıtlı değerlerden hesaplanır. “Tüm Formu
+                  Düzenle” mevcut kaydı günceller; yeni hasta kodu oluşturmaz.
                 </p>
               </section>
             </>

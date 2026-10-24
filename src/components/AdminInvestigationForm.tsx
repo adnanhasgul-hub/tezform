@@ -1,195 +1,142 @@
-import { Fragment, useMemo, useState } from "react";
-import type {
-  CrfValue,
-  InvestigationFieldId,
-  InvestigationValues,
-} from "../types/crf";
-import { getEditableSections } from "./crf/sections";
+import { Fragment, useState } from "react";
+import type { CrfValue, FieldId } from "../types/crf";
+import { crfSections, isFieldVisible } from "./crf/sections";
 import { FormField } from "./crf/FormField";
+import { recalculateDerived } from "./crf/calculations";
+import { validateSection } from "./crf/validation";
 import {
-  completeAdminSubject,
-  updateAdminSubjectInvestigations,
+  saveAdminSubject,
   type AdminSubjectSummary,
 } from "../services/adminRecords";
-
+import {
+  createAdminRecordDraft,
+  investigationValues,
+  investigationState,
+  investigationLabels,
+} from "../services/adminModel";
 interface Props {
   subject: AdminSubjectSummary;
   onBack: () => void;
   onCompleted: () => Promise<void> | void;
-  allowCompletedEdit?: boolean;
+  fullEdit?: boolean;
+  saveRecord?: typeof saveAdminSubject;
 }
-
-type InvestigationDraft = Record<InvestigationFieldId, string | string[]>;
-
-const investigationSection = getEditableSections("admin-completion")[0]!;
-
-function createInvestigationDraft(
-  initial: Partial<InvestigationValues>,
-): InvestigationDraft {
-  const values: Partial<InvestigationDraft> = {};
-  for (const field of investigationSection.fields) {
-    const id = field.id as InvestigationFieldId;
-    const current = initial[id];
-    if (field.kind === "multiselect") {
-      values[id] = Array.isArray(current)
-        ? current.filter((item) => field.options.includes(item))
-        : [];
-    } else {
-      values[id] = typeof current === "string" ? current : "";
-    }
-  }
-  return values as InvestigationDraft;
-}
-
 export function AdminInvestigationForm({
   subject,
   onBack,
   onCompleted,
-  allowCompletedEdit = false,
+  fullEdit = false,
+  saveRecord = saveAdminSubject,
 }: Props) {
-  const editingCompleted =
-    subject.status === "completed" && allowCompletedEdit;
-  const readOnly = subject.status === "completed" && !editingCompleted;
-  const [values, setValues] = useState<InvestigationDraft>(() =>
-    createInvestigationDraft(subject.investigations),
-  );
+  const [values, setValues] = useState(() => createAdminRecordDraft(subject));
   const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<FieldId, string>>>({});
   const [error, setError] = useState("");
-
-  const completedValues = useMemo(
-    () => values as InvestigationValues,
-    [values],
-  );
-
-  function updateField(id: InvestigationFieldId, value: CrfValue) {
-    setValues((previous) => ({
-      ...previous,
-      [id]: Array.isArray(value)
-        ? value
-        : typeof value === "string"
-          ? value
-          : "",
-    }));
+  const sections = fullEdit
+    ? crfSections
+    : crfSections.filter((section) => section.entryRole === "admin");
+  const state = investigationState(investigationValues(values));
+  function update(id: FieldId, value: CrfValue) {
+    setValues((previous) => recalculateDerived({ ...previous, [id]: value }));
+    setErrors((previous) => ({ ...previous, [id]: undefined }));
     setError("");
   }
-
-  async function save() {
-    if (busy || readOnly) return;
-    const confirmed = window.confirm(
-      editingCompleted
-        ? `${subject.subjectCode} için Bölüm 4 değişiklikleri kaydedilecek. Devam edilsin mi?`
-        : `${subject.subjectCode} için Bölüm 4 kaydedilecek ve kayıt “Tamamlandı” durumuna alınacak. Devam edilsin mi?`,
+  async function save(exit = false) {
+    if (busy) return;
+    const invalid = Object.assign(
+      {},
+      ...sections.map((section) => validateSection(section, values)),
     );
-    if (!confirmed) return;
-
+    setErrors(invalid);
+    if (Object.keys(invalid).length) {
+      setError("İşaretli alanları kontrol edin.");
+      return;
+    }
     setBusy(true);
     setError("");
     try {
-      if (editingCompleted) {
-        await updateAdminSubjectInvestigations(subject.id, completedValues);
-      } else {
-        await completeAdminSubject(subject.id, completedValues);
-      }
+      await saveRecord(subject.id, values, fullEdit);
       await onCompleted();
+      if (exit) onBack();
     } catch {
       setError(
-        editingCompleted
-          ? "Bölüm 4 değişiklikleri kaydedilemedi. Yönetici yetkisini ve bağlantıyı kontrol edip tekrar deneyin."
-          : "Bölüm 4 kaydedilemedi. Yönetici yetkisini ve bağlantıyı kontrol edip tekrar deneyin.",
+        "Form kaydedilemedi. Yetkiyi ve bağlantıyı kontrol edip tekrar deneyin.",
       );
     } finally {
       setBusy(false);
     }
   }
-
   return (
-    <section className="admin-completion" aria-labelledby="admin-completion-title">
+    <section className="admin-completion">
       <div className="admin-completion-heading">
-        <div>
-          <p className="eyebrow">
-            {subject.subjectCode} · BÖLÜM 4
-            {editingCompleted ? " · DÜZENLE" : ""}
-          </p>
-          <h2 id="admin-completion-title">{investigationSection.title}</h2>
-        </div>
-        <span className={`admin-status admin-status-${subject.status}`}>
-          {editingCompleted
-            ? "Tamamlandı · Düzenleniyor"
-            : readOnly
-              ? "Tamamlandı"
-              : "Tamamlanmayı Bekliyor"}
+        <h2>
+          {subject.subjectCode} ·{" "}
+          {fullEdit ? "Tüm Formu Düzenle" : "Bölüm 4 Düzenle"}
+        </h2>
+        <span className={`admin-status admin-status-${state}`}>
+          {investigationLabels[state]}
         </span>
       </div>
-
-      <p className="admin-completion-note">
-        {editingCompleted
-          ? "Yalnızca Bölüm 4 radyoloji ve laboratuvar değerleri düzenlenebilir. Hasta tarafından girilen Bölüm 1, 2, 3, 5, 6 ve 7 verileri değiştirilemez."
-          : readOnly
-            ? "Bu kayıt tamamlanmıştır. Bölüm 4 değerleri salt okunur olarak gösteriliyor."
-            : "Radyoloji ve laboratuvar değerlerini girin. Alanlar kaynak forma uygun olarak isteğe bağlıdır; Kaydı Tamamla işlemi sonrasında kayıt tamamlanır."}
-      </p>
-
+      {!fullEdit && (
+        <p>
+          Kısmen doldurduğunuz Bölüm 4 değerlerini kaydedip daha sonra devam
+          edebilirsiniz.
+        </p>
+      )}
       <form
-        onSubmit={(event) => event.preventDefault()}
-        autoComplete="off"
         noValidate
+        autoComplete="off"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void save();
+        }}
       >
-        <fieldset disabled={readOnly || busy} aria-label="Bölüm 4 alanları">
-          <div className="field-grid section-grid-4 admin-investigation-grid">
-            {investigationSection.fields.map((field) => {
-              const id = field.id as InvestigationFieldId;
-              return (
-                <Fragment key={field.id}>
-                  {field.group && (
-                    <h3 className="clinical-group-heading full-width">
-                      {field.group}
-                    </h3>
-                  )}
-                  <div className="question-block">
-                    <div className="question-card">
-                      <FormField
-                        field={field}
-                        value={values[id]}
-                        onBlur={() => undefined}
-                        onChange={(value) => updateField(id, value)}
-                      />
-                    </div>
-                  </div>
-                </Fragment>
-              );
-            })}
-          </div>
+        <fieldset disabled={busy}>
+          {sections.map((section) => (
+            <section key={section.id} className="admin-detail-section">
+              <h3>{section.title}</h3>
+              <div className="field-grid">
+                {section.fields.map((field) =>
+                  !isFieldVisible(field, values) ? null : (
+                    <Fragment key={field.id}>
+                      {field.group && (
+                        <h4 className="clinical-group-heading full-width">
+                          {field.group}
+                        </h4>
+                      )}
+                      <div className="question-card">
+                        <FormField
+                          field={field}
+                          value={values[field.id]}
+                          error={errors[field.id]}
+                          onBlur={() => undefined}
+                          onChange={(value) => update(field.id, value)}
+                        />
+                      </div>
+                    </Fragment>
+                  ),
+                )}
+              </div>
+            </section>
+          ))}
         </fieldset>
-
         {error && (
           <p className="save-error" role="alert">
             {error}
           </p>
         )}
-
         <div className="admin-completion-actions">
           <button
             type="button"
             className="button secondary"
             disabled={busy}
-            onClick={onBack}
+            onClick={() => (fullEdit ? onBack() : void save(true))}
           >
-            ← Hasta Listesine Dön
+            {fullEdit ? "← Hasta Listesine Dön" : "Kaydet ve Listeye Dön"}
           </button>
-          {!readOnly && (
-            <button
-              type="button"
-              className="button primary"
-              disabled={busy}
-              onClick={() => void save()}
-            >
-              {busy
-                ? "Kaydediliyor…"
-                : editingCompleted
-                  ? "Değişiklikleri Kaydet"
-                  : "Bölüm 4'ü Kaydet ve Kaydı Tamamla"}
-            </button>
-          )}
+          <button className="button primary" disabled={busy}>
+            {busy ? "Kaydediliyor…" : "Formu Kaydet"}
+          </button>
         </div>
       </form>
     </section>
