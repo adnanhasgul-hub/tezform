@@ -10,7 +10,6 @@ export function createRegistrationStore(
   database: Firestore,
 ): RegistrationStore {
   const counterRef = doc(database, "systemCounters", "subjects");
-  const poolRef = doc(database, "systemCounters", "reusableSubjects");
   const store: RegistrationStore = {
     newSubjectId: () => doc(collection(database, "subjects")).id,
     timestamp: () => serverTimestamp(),
@@ -26,18 +25,6 @@ export function createRegistrationStore(
           getCounter: async () => {
             const snapshot = await transaction.get(counterRef);
             return snapshot.exists() ? snapshot.data() : null;
-          },
-          getFreeNumbers: async () => {
-            const snapshot = await transaction.get(poolRef);
-            return snapshot.exists() ? snapshot.data().numbers : null;
-          },
-          consumeFreeNumber: (numbers, id) => {
-            transaction.set(poolRef, {
-              numbers,
-              lastSubjectId: id,
-              operation: "allocate",
-              insertIndex: -1,
-            });
           },
           createSubject: (id, data) => {
             transaction.set(doc(database, "subjects", id), data);

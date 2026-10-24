@@ -1,6 +1,6 @@
 # ADNAN TEZ FORMU
 
-React + TypeScript + Vite eCRF; Firebase **Spark** üzerinde Hosting, Authentication ve Firestore kullanır. Cloud Functions, Cloud Run, Admin SDK backend veya ücretli backend yoktur. Bu çalışma henüz commit/push/deploy edilmemiştir; Console önkoşulları aşağıdadır. Mevcut iki sayfalık print optimizasyonu korunmuştur. **Rules emülatörünün resmi indirmesi ağ engeline takıldı; 9 Rules testi henüz çalışmadı. Bu nedenle Rules güvenliği production için doğrulanmış değildir ve testler geçmeden yayınlanmamalıdır.**
+React + TypeScript + Vite eCRF; Firebase **Spark** üzerinde Hosting, Authentication ve Firestore kullanır. Cloud Functions, Cloud Run, Admin SDK backend veya ücretli backend yoktur. PR #11 ile yönetici kayıt yönetimi production’a yayınlandı; önceki Rules sürümü emulator üzerinde 21/21 PASS aldı. Bu hotfix AHT kodlarının yeniden kullanımını kaldırır; yeni Rules ve uygulama için kontrollerin ve yayınların ayrıca tamamlanması gerekir. Mevcut iki sayfalık print optimizasyonu korunmuştur.
 
 ## Geliştirme ve kontroller
 
@@ -49,10 +49,6 @@ systemCounters/subjects
   # İlk commit sonrasında eklenen atomik eşleştirme alanları:
   lastSubjectId, lastRequestId, lastCreatedByUid
 
-systemCounters/reusableSubjects                 # ilk yetkili silmede oluşturulur
-  numbers: [2, 4]                               # sıralı benzersiz reusable numaralar
-  lastSubjectId, operation, insertIndex
-
 subjects/{randomSubjectId}
   subjectCode: AHT-000
   subjectNumber: 0
@@ -75,7 +71,7 @@ admins/{uid}
 
 Tek Firestore transaction önce kendi receipt'ini okur. Receipt varsa klinik dokümanı okumadan ilk sonucu döndürür. Yoksa counter okunur, +1 numara hesaplanır; yeni subject, receipt ve counter beraber yazılır. Çakışmada Firestore transaction yeniden denenir. Receipt path UID + requestId ile kapsamlanır. Farklı UID'lerin aynı UUID'yi kullanması farklı istektir. Client her yeni formda yeni requestId kullanır.
 
-Counter geriye alınmaz. Yetkili yönetici şifresini Firebase ile tekrar doğruladıktan sonra subject silme, kodu reusable havuza koyma ve receipt revocation aynı transaction içinde yapılır. Receipt silinmez; `revoked: true` tombstone olur ve eski browser dahil public read Rules tarafından reddedilir. Console'da counter resetlemek veya receipt geçmişini bozmak bu garantiyi bozar; gerçek veri varken bunu yapmayın.
+**Bir kez tahsis edilen AHT kodu asla yeniden kullanılmaz.** Tek sayı kaynağı `systemCounters/subjects.lastAllocatedNumber` değeridir; her yeni tahsis atomik olarak tam +1 ilerler. İstemcideki hasta silme transaction’ı sayacı okumaz veya değiştirmez; Rules mevcut sayıyı yalnızca doğrulama için okuyabilir. AHT-002 ve AHT-003 silinse bile son tahsis 3 ise sonraki kod AHT-004 olur; numara boşlukları normaldir. Yetkili yönetici şifresini Firebase ile tekrar doğruladıktan sonra subject silme ve receipt revocation aynı transaction içinde yapılır. Receipt silinmez; `revoked: true` tombstone olur ve eski browser dahil public read Rules tarafından reddedilir. Console'da counter resetlemek veya receipt geçmişini bozmak bu garantiyi bozar; mevcut veri/numara geçmişi varken sayacı asla geri almayın.
 
 ## Rules ve Spark sınırları
 
@@ -84,12 +80,12 @@ Counter geriye alınmaz. Yetkili yönetici şifresini Firebase ile tekrar doğru
 - Kimliksiz kullanıcı: subject/counter/admin/receipt erişimi yok.
 - Anonymous: yalnızca gerekli counter `get`, kendi UID'sine ait tek receipt `get`, ve yeni subject + receipt + counter'ın **aynı atomik write** içinde oluşturulması. `getAfter()`/`exists()` bağlarıyla bağımsız counter increment, decrement, +10, public initialization, eksik eş belge veya eski subject/receipt yeniden kullanımı engellenir.
 - Anonymous kullanıcı **kendi subject'ini bile okuyamaz**; list/query/get, subject update/delete, başkasının receipt'i, receipt list/update/delete, admins read/write kapalıdır.
-- Admin: anonymous olmayan Firebase kimliği + `admins/{uid}` varlığı. Subject get/list açıktır; klinik değer güncellemeleri immutable allocation alanları korunarak yapılır. Delete için password provider, son 5 dakika içinde gerçek Auth doğrulaması, atomik kod release ve receipt revocation gerekir. Admin kullanıcı yalnızca kendi marker'ını okuyabilir. Client, admin marker'ı oluşturamaz/değiştiremez/silemez.
+- Admin: anonymous olmayan Firebase kimliği + `admins/{uid}` varlığı. Subject get/list açıktır; klinik değer güncellemeleri immutable allocation alanları korunarak yapılır. Delete için password provider, son 5 dakika içinde gerçek Auth doğrulaması, atomik subject silme ve receipt revocation gerekir; counter değiştirilemez. Admin kullanıcı yalnızca kendi marker'ını okuyabilir. Client, admin marker'ı oluşturamaz/değiştiremez/silemez.
 - Public create yalnızca izin verilen veri anahtarları, tipler, boş investigations, doğru numara/kod, doğru UID, requestId ve server timestamp'lerle yapılabilir. Bu, verinin klinik doğruluğunun veya hastanın kimliğinin server tarafından doğrulandığı anlamına gelmez.
 
 **Bu yapı trusted backend kadar güçlü değildir.** Her anonymous kullanıcı counter'ın son sayısını ve coupling metadata'sını (opaque UID, random ID ve requestId) okuyabilir; bunlarda TC/klinik cevap yoktur. Firestore field-level redaction yapmaz. Rules geçerli +1 tahsisi zorunlu kılar fakat saldırganın yeni anonymous kimlik/isteklerle geçerli görünümlü kayıt üretmesini veya Spark günlük kotasını tüketmesini tamamen engelleyemez. UID başına idempotency aynı hastanın farklı isteklerle tekrar kaydını engellemez. App Check ek savunma olabilir; tek başına kullanıcı yetkilendirmesi veya kesin rate limit değildir. Burada App Check kurulmuş olduğu iddia edilmez. Bu sınırlar kabul edilmeden sistemi hassas production veriyle kullanmayın.
 
-Auth oturumu in-memory olduğu için reload/tab kapatılması UID ve snapshot'ı kaybettirir. Public own-subject read kasıtlı olarak kapalıdır; kayıtlı form public tarafta sonradan geri yüklenemez. Admin erişimi ve bir sonraki aşamadaki panel bu ihtiyacı karşılayacaktır. Refresh ile yeni kayıt açmak ilk kaydı silmez ve numarayı geri kullanmaz.
+Auth oturumu in-memory olduğu için reload/tab kapatılması UID ve snapshot'ı kaybettirir. Public own-subject read kasıtlı olarak kapalıdır; kayıtlı form public tarafta sonradan geri yüklenemez. Kayıtlı formlara erişim yetkili admin paneli üzerinden sağlanır. Refresh ile yeni kayıt açmak ilk kaydı silmez ve numarayı geri kullanmaz.
 
 ## Kayıt sonrası kod, print ve kapatma
 
@@ -107,7 +103,9 @@ Parola Firebase Authentication tarafından doğrulanır; source/env/fixture/log/
 
 Panel hasta listesi, hekim araması, Bölüm 4 kısmi kayıt, tüm form düzenleme, tam görüntüleme, dolu print ve yeniden şifre doğrulamalı silme sağlar. Export eklenmemiştir. Çıkış Yap Auth oturumunu kapatıp login'e döner. Auth in-memory olduğu için reload da yeni login gerektirir.
 
-## Firebase Console: manuel adımlar (henüz uygulanmadı)
+## Firebase Console: yeni kurulum referansı
+
+Mevcut production ortamında Auth sağlayıcıları, admin ve counter kurulmuştur. Aşağıdaki başlangıç değerleri yeni kurulum içindir; mevcut sayacı resetlemeyin.
 
 1. **Spark** projesini `tezform-2848f` olarak doğrulayın. Firestore `(default)` veritabanını ve veri bölgesini kontrol edin. Hiçbir Functions/Run servisi veya billing upgrade gerekmez.
 2. Project settings → Your apps → Web app: altı mevcut `VITE_FIREBASE_*` alanını `.env.local` veya güvenli ortam ayarına girin. `.env` dosyalarını Git'e eklemeyin.
@@ -118,8 +116,8 @@ Panel hasta listesi, hekim araması, Bölüm 4 kısmi kayıt, tüm form düzenle
 7. Firestore → `systemCounters` collection → `subjects` document → integer **lastAllocatedNumber: -1**. Bunu yalnızca henüz hiçbir kod tahsis edilmemiş yeni kurulumda yapın. Mevcut counter/kayıt geçmişi varsa **resetlemeyin**, mevcut tahsisleri incelemeden -1 yazmayın. Transaction kalan coupling alanlarını ilk kayıtta ekleyecek.
 8. `.env.local` içinde **VITE_ADMIN_AUTH_EMAIL** değerine teknik email identifier'ını girin. GitHub Repository → Settings → Secrets and variables → Actions → **Repository Secrets** altında aynı adı/değeri tanımlayın. Bu public identifier'dır; parola değildir. Mevcut altı Firebase web config secret'ını koruyun. Workflow yalnızca bu yeni public variable'ı build'e ekler; deploy komutu Hosting olarak kalır.
 9. Authentication → Settings → Authorized domains bölümünde gerçek Hosting domainlerinizi ve geliştirme için localhost'u doğrulayın. Anonymous ve Email/Password akışını önce kurgu/test ortamında kontrol edin.
-10. **Rules emülatör testleri geçtikten ve kullanıcı incelemesi/onayı tamamlandıktan sonra**, `firestore.rules` içeriğini Console Rules ekranında yayınlayın. Alternatif yetkili CLI komutu `npx firebase deploy --only firestore:rules --project tezform-2848f` olur. Bu görevde yayın yapılmadı; Hosting workflow'u Rules yayınlamaz. Eski deny-all canlıysa kayıt güvenli biçimde hata verir.
-11. Kod ve Console ayarları onaylandıktan sonra ayrı commit/push/Hosting yayın adımını uygulayın. Bu görevde **commit/push/deploy yoktur**. Üretimde kurgu kayıt da numara tüketir; sıra testlerini demo emülatörde yapın, production counter'ı geri almayın.
+10. **Rules emülatör testleri geçtikten ve kullanıcı incelemesi/onayı tamamlandıktan sonra**, `firestore.rules` içeriğini Console Rules ekranında yayınlayın. Alternatif yetkili CLI komutu `npx firebase deploy --only firestore:rules --project tezform-2848f` olur. Hosting workflow'u Rules yayınlamaz; her yeni Rules sürümü ayrıca doğrulanıp yayınlanır. Eski deny-all canlıysa kayıt güvenli biçimde hata verir.
+11. Yeni Rules yayını doğrulandıktan sonra uyumlu uygulama sürümü için ayrı PR/merge/Hosting yayın adımını uygulayın. Üretimde kurgu kayıt da numara tüketir; sıra testlerini demo emülatörde yapın, production counter'ı geri almayın.
 
 ## Dosyalar ve deployment
 
@@ -135,13 +133,13 @@ Panel hasta listesi, hekim araması, Bölüm 4 kısmi kayıt, tüm form düzenle
 
 ## Bu çalışma ortamındaki doğrulama sınırı
 
-Resmi `cloud-firestore-emulator-v1.22.0.jar` indirmesi `storage.googleapis.com` CONNECT **403** ile engellendi; sandbox dışındaki tekrar da aynı sonucu verdi. Ağ izinlerine bu resmi host eklendikten sonra `npm run test:rules` yeniden çalıştırılmalıdır. Yazılan **9 Rules testi henüz çalıştırılmadı**; statik inceleme, çalışan bir güvenlik testi sayılmaz. Bu Rules taslağını testler geçmeden production'a yayınlamayın. Parola/provider/UID/Console ve canlı deployment kontrolleri de manuel önkoşullardan sonra yapılacaktır.
+Önceki sürümün 21 Rules testi GitHub Actions üzerinde geçti. Yeni hotfix testleri bu sonuçtan bağımsız yeniden çalıştırılmalıdır. Yerel emulator JAR indirmesi `storage.googleapis.com` CONNECT **403** ile engellenirse `npm run test:rules` güvenilir CI ortamında çalıştırılmalıdır; unit testler gerçek Rules testlerinin yerine geçmez. Emulator yalnız demo projesini kullanır; production’da deneme hasta kaydı oluşturmayın.
 
-## Yönetici kayıt yönetimi ve yeniden kullanım
+## Yönetici kayıt yönetimi ve kalıcı AHT tahsisi
 
 Bölüm 4 UI durumu merkezi 21 alanın gerçek değerlerinden hesaplanır: `Boş` (kırmızı), `Devam Et` (turuncu), `Tamamlandı` (yeşil). String trim sonrası boşsa, multiselect boşsa doldurulmuş sayılmaz. Persistence için `status`, yalnız tüm alanlar doluysa `completed`, diğer durumlarda `pending_completion` kalır; eski status tek başına UI durumu belirlemez. Kısmi kayıt ve Kaydet ve Listeye Dön desteklenir.
 
-`systemCounters/reusableSubjects` ilk yetkili silmede otomatik oluşturulur; migration veya counter reset gerekmez. `numbers` artan sıralı benzersiz liste; `lastSubjectId`, `operation` ve `insertIndex` atomik işlem doğrulama alanlarıdır. Rules sıralı insertion'ı eski listeyi aynen koruma ve komşu sınırlarıyla doğrular. Public allocation yalnız ilk (en küçük) sayıyı tüketebilir. Havuz boşsa high-water counter tam +1 artar; reuse sırasında high-water değişmez. Tüm belge yazmaları gerçek Firestore transaction içindedir; mevcut 4 denemelik allocation retry korunur. Ortak pool belgesi Firestore 1 MiB belge sınırına tabidir; sınır aşılırsa işlem güvenli biçimde hata verir, havuz atlanmaz.
+Reusable/free-number havuzu kaldırılmıştır. Eski `systemCounters/reusableSubjects` belgesi varsa istemciler okumaz, yazmaz veya tahsiste kullanmaz; Rules erişimi kapatır. Bu belgeyi silme/migration gerekmeksizin mevcut monotonik sayaçtan devam edilir. Yeni hasta için `nextNumber = lastAllocatedNumber + 1` hesaplanır; counter + subject + receipt tek Firestore transaction içinde yazılır. Mevcut en fazla 4 denemelik bounded retry korunur. Eski havuz tabanlı istemci güvenli biçimde reddedilir; production geçişinde doğrulanmış Rules ile yeni Hosting sürümü birlikte planlanmalıdır. Counter veya hasta/receipt geçmişi değiştirilmez.
 
 Admin tam düzenleme yalnız `publicValues`, `investigations`, `status`, `updatedAt` alanlarını günceller. Random belge ID'si, AHT kodu/numarası, `createdAt`, UID ve requestId korunur; counter ve receipt yazılmaz. Public validation ve klinik metadata değiştirilmez. Hekim sütunu mevcut `publicValues.investigatorName` alanından gelir; arama client tarafındadır ve yeni index gerektirmez.
 
