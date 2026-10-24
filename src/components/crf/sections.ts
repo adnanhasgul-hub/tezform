@@ -667,13 +667,6 @@ export const crfSections: readonly CrfSection[] = [
         ],
         required: false,
       },
-      {
-        id: "assessmentDate",
-        label: "Tarih:",
-        kind: "date",
-        required: false,
-        printTemplate: "____/____/202___",
-      },
     ],
   },
 ];

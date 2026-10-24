@@ -1,7 +1,161 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Deny all client access until reviewed authorization rules are implemented.
+    function anonymous() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+    function nonAnonymous() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+    function admin() {
+      return nonAnonymous() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function uuid(value) {
+      return value is string && value.matches('^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$');
+    }
+    function subjectId(value) {
+      return value is string && value.matches('^[A-Za-z0-9]{20}$');
+    }
+    function code(number) {
+      return number < 10 ? 'AHT-00' + string(number)
+        : number < 100 ? 'AHT-0' + string(number)
+        : 'AHT-' + string(number);
+    }
+    function validNumber(number) {
+      return number is int && number >= 0 && number <= 9007199254740991;
+    }
+    function validCounter(data) {
+      return data.keys().hasAll(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
+        && data.keys().hasOnly(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
+        && validNumber(data.lastAllocatedNumber)
+        && subjectId(data.lastSubjectId) && uuid(data.lastRequestId)
+        && data.lastCreatedByUid == request.auth.uid;
+    }
+    function validPublic(data) {
+      return data is map
+        && data.keys().hasAll(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
+        && data.keys().hasOnly(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
+        && data.nationalId is string
+        && data.protocolDate is string
+        && data.sex is string
+        && data.age is string
+        && data.weight is string
+        && data.height is string
+        && data.indication is string
+        && data.indicationOther is string
+        && data.dailyDose is string
+        && data.dailyDoseOther is string
+        && data.adherence is string
+        && data.lastDoseTime is string
+        && data.nsaid is string
+        && data.nsaidFrequency is string
+        && data.bruising is string
+        && data.bruisingSize is string
+        && data.gingivalBleeding is string
+        && data.gingivalDuration is string
+        && data.epistaxis is string
+        && data.epistaxisFrequency is string
+        && data.epistaxisDuration is string
+        && data.cutBleeding is string
+        && data.melena is string
+        && data.hematochezia is string
+        && data.hematemesis is string
+        && data.hematuria is string
+        && data.menorrhagia is string
+        && data.headache is string
+        && data.neurologicalSymptoms is string
+        && data.hemarthrosis is string
+        && data.hemoptysis is string
+        && data.subconjunctivalBleeding is string
+        && data.healthcareVisit is string
+        && data.healthcareVisitType is string
+        && data.transfusion is string
+        && data.transfusionUnits is string
+        && data.treatmentInterruption is string
+        && data.interruptionDays is string
+        && data.hemoglobinDrop is string
+        && data.bleedingOnsetInterval is string
+        && data.bleedingDayDose is string
+        && data.researchNotes is string
+        && data.investigatorName is string
+        && data.otherAntithrombotic is list
+        && data.otherAntithrombotic.toSet().size() == data.otherAntithrombotic.size()
+        && data.otherAntithrombotic.hasOnly(['Hayır', 'Aspirin', 'Klopidogrel / Tikagrelor', 'Heparin'])
+        && data.inhibitors is list
+        && data.inhibitors.toSet().size() == data.inhibitors.size()
+        && data.inhibitors.hasOnly(['Amiodaron', 'Verapamil', 'Diltiazem', 'Ketokonazol / Itrakonazol', 'Klaritromisin', 'Hiçbiri'])
+        && data.inducers is list
+        && data.inducers.toSet().size() == data.inducers.size()
+        && data.inducers.hasOnly(['Rifampisin', 'Karbamazepin', 'Fenitoin', "Sarı Kantaron (St. John's Wort)", 'Hiçbiri'])
+        && (data.bmi == null || ((data.bmi is int || data.bmi is float) && data.bmi >= 0))
+        && (data.treatmentDurationYears == null || (data.treatmentDurationYears is int && data.treatmentDurationYears >= 0))
+        && (data.treatmentDurationMonths == null || (data.treatmentDurationMonths is int && data.treatmentDurationMonths >= 0 && data.treatmentDurationMonths <= 11))
+        && ((data.treatmentDurationYears == null || data.treatmentDurationMonths == null)
+          ? data.treatmentDurationTotalMonths == null
+          : data.treatmentDurationTotalMonths is int && data.treatmentDurationTotalMonths == data.treatmentDurationYears * 12 + data.treatmentDurationMonths);
+    }
+    function validSubject(data) {
+      return data.keys().hasAll(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
+        && data.keys().hasOnly(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
+        && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber)
+        && data.status == 'pending_completion'
+        && data.createdAt == request.time && data.updatedAt == request.time
+        && data.createdByUid == request.auth.uid && uuid(data.requestId)
+        && data.investigations is map && data.investigations.size() == 0
+        && validPublic(data.publicValues);
+    }
+    function validReceipt(data, requestId) {
+      return data.keys().hasAll(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
+        && data.keys().hasOnly(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
+        && subjectId(data.subjectId) && data.requestId == requestId && uuid(requestId)
+        && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber);
+    }
+    // All three documents must be new/coupled in one atomic allocation. The counter
+    // is manually provisioned; clients cannot initialize/reset/delete it.
+    function allocation(subject, requestId, number) {
+      let counterPath = /databases/$(database)/documents/systemCounters/subjects;
+      let subjectPath = /databases/$(database)/documents/subjects/$(subject);
+      let receiptPath = /databases/$(database)/documents/submissionRequests/$(request.auth.uid)/requests/$(requestId);
+      let previousCounter = get(counterPath).data;
+      let nextCounter = getAfter(counterPath).data;
+      let nextSubject = getAfter(subjectPath).data;
+      let nextReceipt = getAfter(receiptPath).data;
+      return previousCounter.lastAllocatedNumber is int && previousCounter.lastAllocatedNumber >= -1
+        && !exists(subjectPath) && !exists(receiptPath)
+        && validCounter(nextCounter)
+        && number == previousCounter.lastAllocatedNumber + 1
+        && nextCounter.lastAllocatedNumber == number
+        && nextCounter.lastSubjectId == subject && nextCounter.lastRequestId == requestId
+        && nextSubject.createdByUid == request.auth.uid && nextSubject.requestId == requestId
+        && nextSubject.subjectNumber == number && nextSubject.subjectCode == code(number)
+        && nextReceipt.subjectId == subject && nextReceipt.subjectNumber == number
+        && nextReceipt.subjectCode == code(number) && nextReceipt.requestId == requestId;
+    }
+    match /systemCounters/subjects {
+      allow get: if anonymous() || admin();
+      allow list, create, delete: if false;
+      allow update: if anonymous() && validCounter(request.resource.data)
+        && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId, request.resource.data.lastAllocatedNumber);
+    }
+    match /subjects/{id} {
+      allow get, list: if admin();
+      allow create: if anonymous() && subjectId(id) && validSubject(request.resource.data)
+        && allocation(id, request.resource.data.requestId, request.resource.data.subjectNumber);
+      // Editing/completion is intentionally not enabled in this phase.
+      allow update, delete: if false;
+    }
+    match /submissionRequests/{uid}/requests/{id} {
+      allow get: if anonymous() && request.auth.uid == uid;
+      allow list, update, delete: if false;
+      allow create: if anonymous() && request.auth.uid == uid && validReceipt(request.resource.data, id)
+        && allocation(request.resource.data.subjectId, id, request.resource.data.subjectNumber);
+    }
+    match /admins/{uid} {
+      // Only the signed-in non-anonymous user can inspect their own marker,
+      // including a missing marker. Marker provisioning is Console-only.
+      allow get: if nonAnonymous() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }

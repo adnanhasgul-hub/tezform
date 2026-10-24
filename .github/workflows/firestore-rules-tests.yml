@@ -1,0 +1,40 @@
+name: Firestore Rules Tests (Emulator)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [rules-test]
+
+permissions:
+  contents: read
+
+jobs:
+  rules-tests:
+    name: Test Firestore Rules on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Set up Java for Firestore emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install locked dependencies and official Firebase tools
+        run: npm ci
+
+      # The runner starts only Firestore with the demo-tezform-rules project.
+      # No production Firebase configuration or credentials are used.
+      - name: Run Firestore Rules tests against emulator only
+        run: npm run test:rules

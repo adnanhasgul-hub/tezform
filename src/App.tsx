@@ -1,5 +1,10 @@
-import { HomePage } from './pages/HomePage'
+import { HomePage } from "./pages/HomePage";
+import { AdminPage } from "./pages/AdminPage";
 
 export default function App() {
-  return <HomePage />
+  return window.location.pathname.replace(/\/+$/, "") === "/admin" ? (
+    <AdminPage />
+  ) : (
+    <HomePage />
+  );
 }

@@ -53,11 +53,11 @@ test("every clinical heading, question, option, explanatory text and unit matche
 test("all source answers have unique fields and the sole Section 1 laboratory exception is respected", () => {
   assert.deepEqual(
     crfSections.map((section) => section.fields.length),
-    [9, 6, 5, 21, 18, 7, 5],
+    [9, 6, 5, 21, 18, 7, 4],
   );
-  assert.equal(fields.length, 71);
-  assert.equal(new Set(fields.map((item) => item.id)).size, 71);
-  assert.equal(publicSections.flatMap((section) => section.fields).length, 50);
+  assert.equal(fields.length, 70);
+  assert.equal(new Set(fields.map((item) => item.id)).size, 70);
+  assert.equal(publicSections.flatMap((section) => section.fields).length, 49);
   const demographics = crfSections[0]!;
   const labIds = getEditableSections("admin-completion").flatMap((section) =>
     section.fields.map((item) => item.id),
@@ -158,8 +158,8 @@ test("format checks do not impose clinical ranges, rounding or text truncation",
   );
   assert(validateField(field("age"), "NaN"));
   assert(validateField(field("sex"), "not a source option"));
-  assert.equal(validateField(field("assessmentDate"), "2024-02-29"), undefined);
-  assert(validateField(field("assessmentDate"), "2025-02-29"));
+  assert.equal(validateField(field("protocolDate"), "2024-02-29"), undefined);
+  assert(validateField(field("protocolDate"), "2025-02-29"));
   assert.equal(validateField(field("lastDoseTime"), "23:59"), undefined);
   assert(validateField(field("lastDoseTime"), "24:00"));
 });
@@ -181,10 +181,25 @@ test("unapproved clinical sections and Section 7 questions exactly retain the 04
       normalize(getSection(revised, number)),
       normalize(getSection(baseline, number)),
     );
-  const old7 = getSection(baseline, 7).replace("İmza / Kaşe:", "");
+  const old7 = getSection(baseline, 7)
+    .replace("İmza / Kaşe:", "")
+    .replace(/Tarih:\s*$/, "");
   const new7 = getSection(revised, 7).replace(
     /Dr\. (Mehmet|Yasin|Tuncay|Burak|Adnan|Rabia)\n/g,
     "",
   );
   assert.equal(normalize(new7), normalize(old7));
+});
+
+test("Section 7 date is removed; the only clinical date is the editable Section 1 date", () => {
+  assert.deepEqual(
+    fields.filter((item) => item.kind === "date").map((item) => item.id),
+    ["protocolDate"],
+  );
+  assert(
+    !crfSections
+      .find((section) => section.number === 7)!
+      .fields.some((item) => item.label === "Tarih:"),
+  );
+  assert(!fields.some((item) => String(item.id) === "assessmentDate"));
 });
