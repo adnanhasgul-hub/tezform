@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminInvestigationForm } from "../components/AdminInvestigationForm";
-import { AdminSubjectDetail } from "../components/AdminSubjectDetail";
+import {
+  AdminSubjectDetail,
+  createAdminRecordDraft,
+} from "../components/AdminSubjectDetail";
+import { PrintCrf } from "../components/crf/PrintCrf";
 import {
   AdminLoginError,
   loginAdmin,
@@ -15,6 +19,12 @@ import {
 import { adminUsernameAlias } from "../services/authPolicy";
 
 type StatusFilter = "all" | "pending_completion" | "completed";
+type RecordMode = "view" | "complete" | "edit" | "print";
+
+interface RecordSelection {
+  id: string;
+  mode: RecordMode;
+}
 
 const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
   dateStyle: "short",
@@ -40,8 +50,7 @@ export function AdminPage() {
   const [subjectsError, setSubjectsError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedSubject, setSelectedSubject] =
-    useState<AdminSubjectSummary | null>(null);
+  const [selection, setSelection] = useState<RecordSelection | null>(null);
 
   useEffect(() => observeAdminSession(setSession), []);
 
@@ -63,9 +72,17 @@ export function AdminPage() {
     if (session.status === "authorized") void refreshSubjects();
     else {
       setSubjects([]);
-      setSelectedSubject(null);
+      setSelection(null);
     }
   }, [session.status, refreshSubjects]);
+
+  const selectedSubject = useMemo(
+    () =>
+      selection
+        ? subjects.find((subject) => subject.id === selection.id) ?? null
+        : null,
+    [selection, subjects],
+  );
 
   const counts = useMemo(
     () => ({
@@ -101,7 +118,6 @@ export function AdminPage() {
     setPassword("");
     try {
       await loginAdmin(username, submittedPassword);
-      // Auth state observer performs the same UID membership guard for the dashboard.
     } catch (error) {
       setMessage(
         error instanceof AdminLoginError && error.reason === "unauthorized"
@@ -128,7 +144,14 @@ export function AdminPage() {
     }
   }
 
+  async function handleInvestigationSaved(subjectId: string) {
+    await refreshSubjects();
+    setSelection({ id: subjectId, mode: "view" });
+  }
+
   if (session.status === "authorized") {
+    const closeRecord = () => setSelection(null);
+
     return (
       <div className="app-shell admin-shell">
         <header className="admin-topbar">
@@ -152,19 +175,30 @@ export function AdminPage() {
         </header>
 
         <main className="admin-dashboard">
-          {selectedSubject ? (
-            selectedSubject.status === "completed" ? (
+          {selection && selectedSubject ? (
+            selection.mode === "print" ? (
+              <PrintCrf
+                preview
+                values={createAdminRecordDraft(selectedSubject)}
+                subjectCode={selectedSubject.subjectCode}
+                closeLabel="Hasta Listesine Dön"
+                onClose={closeRecord}
+              />
+            ) : selection.mode === "view" ? (
               <AdminSubjectDetail
                 key={selectedSubject.id}
                 subject={selectedSubject}
-                onBack={() => setSelectedSubject(null)}
+                onBack={closeRecord}
               />
             ) : (
               <AdminInvestigationForm
-                key={selectedSubject.id}
+                key={`${selectedSubject.id}-${selection.mode}`}
                 subject={selectedSubject}
-                onBack={() => setSelectedSubject(null)}
-                onCompleted={refreshSubjects}
+                allowCompletedEdit={selection.mode === "edit"}
+                onBack={closeRecord}
+                onCompleted={() =>
+                  handleInvestigationSaved(selectedSubject.id)
+                }
               />
             )
           ) : (
@@ -260,15 +294,50 @@ export function AdminPage() {
                             </span>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="button secondary admin-action-button"
-                              onClick={() => setSelectedSubject(subject)}
-                            >
-                              {subject.status === "completed"
-                                ? "Görüntüle"
-                                : "Formu Tamamla"}
-                            </button>
+                            {subject.status === "completed" ? (
+                              <div
+                                className="admin-action-group"
+                                style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                              >
+                                <button
+                                  type="button"
+                                  className="button secondary admin-action-button"
+                                  onClick={() =>
+                                    setSelection({ id: subject.id, mode: "edit" })
+                                  }
+                                >
+                                  Düzenle
+                                </button>
+                                <button
+                                  type="button"
+                                  className="button secondary admin-action-button"
+                                  onClick={() =>
+                                    setSelection({ id: subject.id, mode: "view" })
+                                  }
+                                >
+                                  Görüntüle
+                                </button>
+                                <button
+                                  type="button"
+                                  className="button primary admin-action-button"
+                                  onClick={() =>
+                                    setSelection({ id: subject.id, mode: "print" })
+                                  }
+                                >
+                                  Yazdır
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="button secondary admin-action-button"
+                                onClick={() =>
+                                  setSelection({ id: subject.id, mode: "complete" })
+                                }
+                              >
+                                Formu Tamamla
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -285,10 +354,9 @@ export function AdminPage() {
                   </table>
                 </div>
                 <p className="admin-list-note">
-                  “Formu Tamamla” yalnızca Bölüm 4 radyoloji ve laboratuvar
-                  alanlarını kaydeder. “Görüntüle” tamamlanmış CRF'nin tüm
-                  bölümlerini salt okunur olarak açar ve doldurulmuş formun
-                  yazdırılmasını sağlar.
+                  Tamamlanan kayıtlarda “Görüntüle” Bölüm 1–7'nin tamamını açar.
+                  “Düzenle” yalnızca yöneticiye ait Bölüm 4 verilerini değiştirir.
+                  “Yazdır” doldurulmuş CRF yazdırma ekranını doğrudan açar.
                 </p>
               </section>
             </>
