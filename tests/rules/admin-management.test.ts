@@ -104,7 +104,9 @@ async function allocate(db: Firestore, uid: string, number: number) {
     });
   } catch (error) {
     // Synthetic emulator fixtures only; preserve the underlying Rules denial in CI.
-    throw lastFailure ?? error;
+    throw new Error(`Synthetic allocation ${uid}/${number} failed`, {
+      cause: lastFailure ?? error,
+    });
   }
 }
 
@@ -156,17 +158,31 @@ test("partial Section 4 saves retain values and correctly transition complete ->
   await assertFails(
     updateDoc(ref, { status: "completed", updatedAt: serverTimestamp() }),
   );
+  await assertSucceeds(
+    updateDoc(ref, {
+      investigations: { ...fullInvestigations(), bun: "\u00a0" },
+      status: "pending_completion",
+      updatedAt: serverTimestamp(),
+    }),
+  );
 });
 test("full edit updates clinical data but preserves identity, counter and receipt; public/non-admin denied", async () => {
   const result = await allocate(anon(), "collector", 1);
   const db = admin();
   const ref = doc(db, "subjects", result.subjectId);
   const before = (await getDoc(ref)).data()!;
-  const values = { ...publicValues(), researchNotes: "SYNTHETIC EDIT" };
+  const values = {
+    ...publicValues(),
+    researchNotes: "SYNTHETIC EDIT",
+    bmi: 24.7,
+    treatmentDurationYears: 3,
+    treatmentDurationMonths: 4,
+    treatmentDurationTotalMonths: 40,
+  };
   const patch = {
     publicValues: values,
-    investigations: investigationValues(createEmptyCrf()),
-    status: "pending_completion",
+    investigations: fullInvestigations(),
+    status: "completed",
     updatedAt: serverTimestamp(),
   };
   await assertSucceeds(updateDoc(ref, patch));
@@ -276,19 +292,20 @@ test("pool cannot be forged or consumed without allocation; deletion cannot muta
     );
     await assertFails(deleteDoc(doc(denied, "subjects", one.subjectId)));
   }
-  const batch = writeBatch(admin());
-  batch.set(doc(admin(), "systemCounters/reusableSubjects"), {
+  const database = admin();
+  const batch = writeBatch(database);
+  batch.set(doc(database, "systemCounters/reusableSubjects"), {
     numbers: [0],
     lastSubjectId: one.subjectId,
     operation: "release",
     insertIndex: 0,
   });
   batch.update(
-    doc(admin(), "submissionRequests/collector/requests", request(1)),
+    doc(database, "submissionRequests/collector/requests", request(1)),
     { revoked: true },
   );
-  batch.delete(doc(admin(), "subjects", one.subjectId));
-  batch.update(doc(admin(), "subjects", two.subjectId), { subjectNumber: 0 });
+  batch.delete(doc(database, "subjects", one.subjectId));
+  batch.update(doc(database, "subjects", two.subjectId), { subjectNumber: 0 });
   await assertFails(batch.commit());
-  assert((await getDoc(doc(admin(), "subjects", one.subjectId))).exists());
+  assert((await getDoc(doc(database, "subjects", one.subjectId))).exists());
 });

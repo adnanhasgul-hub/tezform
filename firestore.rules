@@ -139,25 +139,25 @@ service cloud.firestore {
     }
     function investigationsComplete(data) {
       return data.dvtLocations.size() > 0 && data.dvtSide.size() > 0
-        && data.bun.matches('.*\\S.*')
-        && data.creatinine.matches('.*\\S.*')
-        && data.egfr.matches('.*\\S.*')
-        && data.calcium.matches('.*\\S.*')
-        && data.sodium.matches('.*\\S.*')
-        && data.potassium.matches('.*\\S.*')
-        && data.totalBilirubin.matches('.*\\S.*')
-        && data.directBilirubin.matches('.*\\S.*')
-        && data.ast.matches('.*\\S.*')
-        && data.alt.matches('.*\\S.*')
-        && data.totalProtein.matches('.*\\S.*')
-        && data.albumin.matches('.*\\S.*')
-        && data.wbc.matches('.*\\S.*')
-        && data.hemoglobin.matches('.*\\S.*')
-        && data.platelets.matches('.*\\S.*')
-        && data.hct.matches('.*\\S.*')
-        && data.pt.matches('.*\\S.*')
-        && data.inr.matches('.*\\S.*')
-        && data.aptt.matches('.*\\S.*')
+        && data.bun.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.creatinine.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.egfr.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.calcium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.sodium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.potassium.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.totalBilirubin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.directBilirubin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.ast.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.alt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.totalProtein.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.albumin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.wbc.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.hemoglobin.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.platelets.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.hct.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.pt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.inr.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
+        && data.aptt.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
         ;
     }
     function validAdminEdit(before, after) {
@@ -252,7 +252,8 @@ service cloud.firestore {
       allow get: if anonymous() || admin();
       allow list, create, delete: if false;
       allow update: if anonymous() && validCounter(request.resource.data)
-        && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId, request.resource.data.lastAllocatedNumber);
+        && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId,
+          getAfter(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data.subjectNumber);
     }
     match /systemCounters/reusableSubjects {
       allow get: if anonymous() || admin();
