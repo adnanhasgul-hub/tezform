@@ -13,6 +13,7 @@ import { db } from "../firebase/client";
 import type {
   CrfRecordStatus,
   InvestigationValues,
+  PublicCrfValues,
 } from "../types/crf";
 
 export interface AdminSubjectSummary {
@@ -22,6 +23,7 @@ export interface AdminSubjectSummary {
   status: CrfRecordStatus;
   createdAt: Date | null;
   updatedAt: Date | null;
+  publicValues: PublicCrfValues;
   investigations: Partial<InvestigationValues>;
 }
 
@@ -36,6 +38,13 @@ function timestampToDate(value: unknown): Date | null {
     return Number.isNaN(date.getTime()) ? null : date;
   }
   return null;
+}
+
+function parsePublicValues(value: unknown): PublicCrfValues {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Invalid public CRF values");
+  }
+  return value as PublicCrfValues;
 }
 
 function parseInvestigations(value: unknown): Partial<InvestigationValues> {
@@ -63,6 +72,7 @@ function parseSubject(
     status: data.status,
     createdAt: timestampToDate(data.createdAt),
     updatedAt: timestampToDate(data.updatedAt),
+    publicValues: parsePublicValues(data.publicValues),
     investigations: parseInvestigations(data.investigations),
   };
 }
