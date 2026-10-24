@@ -1,5 +1,6 @@
 import { createAdminRecordDraft } from "../services/adminModel";
 import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
+import { AdminRowActions } from "../components/AdminRowActions";
 import {
   investigationState,
   investigationLabels,
@@ -228,20 +229,20 @@ export function AdminPage() {
           ) : (
             <>
               <section className="admin-stats" aria-label="Kayıt özeti">
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-total">
                   <span>Toplam Hasta</span>
                   <strong>{counts.total}</strong>
                 </article>
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-empty">
                   <span>Boş</span>
                   <strong>{counts.empty}</strong>
                 </article>
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-partial">
                   <span>Devam Et</span>
                   <strong>{counts.partial}</strong>
                 </article>
-                <article className="admin-stat-card">
-                  <span>Tamamlanan</span>
+                <article className="admin-stat-card admin-stat-complete">
+                  <span>Tamamlandı</span>
                   <strong>{counts.completed}</strong>
                 </article>
               </section>
@@ -333,64 +334,13 @@ export function AdminPage() {
                             </span>
                           </td>
                           <td>
-                            <div className="admin-action-group">
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({ id: subject.id, mode: "edit" })
-                                }
-                              >
-                                {investigationState(subject.investigations) ===
-                                "empty"
-                                  ? "Formu Tamamla"
-                                  : investigationState(
-                                        subject.investigations,
-                                      ) === "partial"
-                                    ? "Devam Et"
-                                    : "Bölüm 4 Düzenle"}
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "full-edit",
-                                  })
-                                }
-                              >
-                                Tüm Formu Düzenle
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({ id: subject.id, mode: "view" })
-                                }
-                              >
-                                Görüntüle
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "print",
-                                  })
-                                }
-                              >
-                                Yazdır
-                              </button>
-                              <button
-                                className="button danger admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "delete",
-                                  })
-                                }
-                              >
-                                Sil
-                              </button>
-                            </div>
+                            <AdminRowActions
+                              subjectCode={subject.subjectCode}
+                              state={investigationState(subject.investigations)}
+                              onAction={(mode) =>
+                                setSelection({ id: subject.id, mode })
+                              }
+                            />
                           </td>
                         </tr>
                       ))}

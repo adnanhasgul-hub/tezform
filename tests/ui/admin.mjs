@@ -60,6 +60,19 @@ export async function checkAdmin(browser, origin) {
     await row("AHT-002")
       .getByRole("button", { name: "Bölüm 4 Düzenle", exact: true })
       .waitFor();
+    await row("AHT-000").getByRole("button", { name: "Diğer işlemler: AHT-000", exact: true }).click();
+    await page.getByRole("menu").waitFor();
+    const secondTrigger = row("AHT-001").getByRole("button", { name: "Diğer işlemler: AHT-001", exact: true });
+    await secondTrigger.focus();
+    await secondTrigger.press("Enter");
+    await page.getByRole("menu", { name: "AHT-001 diğer işlemler", exact: true }).waitFor();
+    assert.equal(await page.getByRole("menu").count(), 1);
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByRole("menu").count(), 0);
+    await row("AHT-002").getByRole("button", { name: "Diğer işlemler: AHT-002", exact: true }).click();
+    await page.getByRole("heading", { name: "Hasta Kayıtları", exact: true }).click();
+    assert.equal(await page.getByRole("menu").count(), 0);
+    await page.screenshot({ path: "/tmp/tezform-phase-b-admin.png", fullPage: true });
     const search = page.getByRole("searchbox");
     await search.fill("Dr. Adnan");
     assert.equal(await page.locator("tbody tr").count(), 1);
@@ -76,9 +89,8 @@ export async function checkAdmin(browser, origin) {
       .click();
     assert.equal(await page.locator("#crf-creatinine").inputValue(), "2");
     await page.getByRole("button", { name: "Kaydet ve Listeye Dön" }).click();
-    await row("AHT-002")
-      .getByRole("button", { name: "Tüm Formu Düzenle" })
-      .click();
+    await row("AHT-002").getByRole("button", { name: "Diğer işlemler: AHT-002", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Tüm Formu Düzenle", exact: true }).click();
     await page.locator("#crf-nationalId").waitFor();
     await page.locator("#crf-bun").waitFor();
     await page.locator("#crf-investigatorName").waitFor();
@@ -117,9 +129,10 @@ export async function checkAdmin(browser, origin) {
       .getByRole("button", { name: "Hasta Listesine Dön", exact: true })
       .click();
     await page.setViewportSize({ width: 390, height: 844 });
-    await row("AHT-000")
-      .getByRole("button", { name: "Sil", exact: true })
-      .click();
+    await row("AHT-000").getByRole("button", { name: "Diğer işlemler: AHT-000", exact: true }).click();
+    const menuBox = await page.getByRole("menu").boundingBox();
+    assert(menuBox.x >= 0 && menuBox.x + menuBox.width <= 390);
+    await page.getByRole("menuitem", { name: "Sil", exact: true }).click();
     await page.getByRole("dialog").waitFor();
     assert(
       (await page.getByRole("dialog").innerText()).includes(

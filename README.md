@@ -152,3 +152,7 @@ Deployment sırası: emulator testleri → kontrollü manuel Rules yayını → 
 Bölüm 4, `dvtSide`, `dvtRightLocations`, `dvtLeftLocations` ve 19 laboratuvar alanından oluşur. Lokasyon seçenekleri metadata’dan gelir; yalnız seçilen taraflar dijitalde gösterilir. Tek taraf başlığı 2, bilateral başlıklar 2A/2B olur. Taraf kaldırılınca o tarafın gizli cevapları kalıcı veriden çıkarılır. Tamamlanma, seçilmiş her taraf için lokalizasyon ve mevcut laboratuvar alanlarını gerektirir; kısmi kayıt korunur.
 
 Eski tek taraflı `dvtLocations` güvenle ilgili tarafa eşlenir. Eski bilateral ortak lokalizasyonlar tahmin edilmez; yöneticiye kaynak bilgi ve uyarı gösterilir. Yeni modele kayıt öncesinde seçilmiş tarafların lokalizasyonları ayrı ayrı girilir ve açıkça doğrulanır. Eski alan yeni kayıtlara yazılmaz. Salt okunur görünüm ve print aynı adapter/metadata’yı kullanır; belirsiz eski ortak bilgi baskıda da açıkça belirtilir. Boş kağıt formunda iki tarafın da seçenekleri bulunur. AHT tahsis ve silme transaction’ları değiştirilmemiştir.
+
+## Phase B: klinik arayüz
+
+`src/design-tokens.css` ortak navy/mor/teal paletini ve erişilebilir başarı/uyarı/hata renklerini tanımlar. Durum kartları kontrollü vurgu kullanır. Hasta satırı ana işlem, Görüntüle, Yazdır ve native popover menüsünden oluşur. Tüm Formu Düzenle ve Sil menüdedir; klavye, Escape, dış tıklama ve mobil viewport sınırları desteklenir. Silme güvenliği ve AHT davranışı korunur.

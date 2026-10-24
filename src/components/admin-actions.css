@@ -1,0 +1,97 @@
+.admin-row-actions {
+  display: inline-grid;
+  grid-template-columns: minmax(142px, 1fr) auto auto 38px;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-row-actions .button {
+  margin: 0;
+  min-height: 38px;
+  white-space: nowrap;
+}
+
+.admin-row-actions .admin-more-action {
+  padding-inline: 6px;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.admin-row-menu[popover] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 6px;
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: var(--shadow-menu);
+}
+
+.admin-row-menu::backdrop {
+  background: transparent;
+}
+
+.admin-row-menu button {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-row-menu button:hover,
+.admin-row-menu button:focus-visible {
+  background: var(--color-soft-purple);
+}
+
+.admin-row-menu button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.admin-row-menu button.admin-menu-danger {
+  color: var(--color-danger);
+}
+
+.admin-row-menu button.admin-menu-danger:hover,
+.admin-row-menu button.admin-menu-danger:focus-visible {
+  background: var(--color-danger-soft);
+}
+
+.admin-row-menu hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+  .admin-row-actions {
+    grid-template-columns: minmax(134px, 1fr) auto auto 38px;
+    gap: 5px;
+  }
+
+  .admin-row-actions .button {
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+
+  .admin-row-actions .admin-more-action {
+    font-size: 24px;
+  }
+}
+
+@media print {
+  .admin-row-menu {
+    display: none !important;
+  }
+}

@@ -1,0 +1,39 @@
+/* Shared academic/clinical palette. Semantic roles also drive admin status UI. */
+:root {
+  --color-primary: #172B4D;
+  --color-accent: #71339B;
+  --color-accent-hover: #572477;
+  --color-accent-border: #C6A8DB;
+  --color-focus: #71339B;
+  --color-teal: #168C88;
+  --color-teal-strong: #0F6C69;
+  --color-teal-soft: #EAF6F5;
+  --color-background: #F4F7FB;
+  --color-card: #FFFFFF;
+  --color-soft-purple: #F5EEFA;
+  --color-soft-blue: #EEF5FA;
+  --color-text: #263952;
+  --color-muted: #526279;
+  --color-border: #D6E0EB;
+  --color-input-border: #7A8CA3;
+  --color-surface-hover: #F9F6FC;
+  --color-disabled: #E3E8F0;
+  --color-disabled-text: #536176;
+  --color-success: #17643B;
+  --color-success-soft: #EAF6EE;
+  --color-success-border: #A9D2BB;
+  --color-warning: #923B0A;
+  --color-warning-soft: #FFF1DF;
+  --color-danger: #A42632;
+  --color-danger-soft: #FCECEE;
+  --color-danger-border: #CA7B84;
+  --color-shadow: #172B4D0A;
+  --color-focus-halo: #71339B24;
+  --color-overlay: #172B4DB3;
+  --color-overlay-soft: #172B4D66;
+  --color-sticky-surface: #F4F7FBF5;
+  --color-card-translucent: #FFFFFFE8;
+  --color-paper-ink: #000000;
+  --color-paper-rule: #333333;
+  --shadow-menu: 0 12px 32px #172B4D24;
+}
