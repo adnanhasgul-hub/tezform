@@ -121,6 +121,11 @@ export async function checkAdmin(browser, origin) {
       .click();
     await page.getByRole("dialog").waitFor();
     assert(
+      (await page.getByRole("dialog").innerText()).includes(
+        "AHT-000 kodu başka bir hastaya verilmeyecektir.",
+      ),
+    );
+    assert(
       await page
         .getByRole("button", { name: "Kalıcı Olarak Sil" })
         .isDisabled(),

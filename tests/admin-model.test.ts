@@ -11,10 +11,6 @@ import {
   recordStatus,
 } from "../src/services/adminModel.ts";
 import { reauthenticatedDelete } from "../src/services/adminDeletion.ts";
-import {
-  readFreeNumbers,
-  releaseNumber,
-} from "../src/services/reusableNumbers.ts";
 test("Section 4 states use all canonical fields and real values, including whitespace and arrays", () => {
   const empty = investigationValues(createEmptyCrf());
   assert.equal(Object.keys(empty).length, 21);
@@ -70,14 +66,6 @@ test("fresh Firebase reauthentication is required before any delete operation st
     },
   );
   assert.deepEqual(order, ["auth", "delete"]);
-});
-test("reusable pool preserves sorted unique numbers and rejects malformed state", () => {
-  assert.deepEqual(releaseNumber([2, 4], 3), [2, 3, 4]);
-  assert.deepEqual(releaseNumber([], 0), [0]);
-  for (const invalid of [[2, 2], [4, 2], [-1], [0.5]])
-    assert.throws(() => readFreeNumbers(invalid));
-  assert.throws(() => releaseNumber([2], 2));
-  assert.deepEqual(readFreeNumbers(null), []);
 });
 
 test("Rules Section 4 schema matches canonical metadata without drifting", async () => {

@@ -59,8 +59,8 @@ export function AdminDeleteDialog({
     >
       <h2 id="delete-title">{subject.subjectCode} kaydını sil</h2>
       <p role="alert">
-        Bu işlem geri alınamaz. Kayıtlı tüm hasta verileri silinecek ve{" "}
-        {subject.subjectCode} kodu yeniden kullanılabilir hale gelecektir.
+        Bu işlem geri alınamaz. Kayıtlı tüm hasta verileri silinecek.{" "}
+        {subject.subjectCode} kodu başka bir hastaya verilmeyecektir.
       </p>
       <form onSubmit={(event) => void submit(event)} autoComplete="off">
         <fieldset disabled={busy}>

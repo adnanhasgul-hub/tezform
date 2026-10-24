@@ -27,7 +27,6 @@ class AtomicMemoryStore implements RegistrationStore {
   counter: unknown | null = { lastAllocatedNumber: -1 };
   subjects = new Map<string, SubjectDocument>();
   receipts = new Map<string, RegistrationResult>();
-  free: number[] = [];
   ids = 0;
   transactions = 0;
   failCommit = false;
@@ -49,11 +48,6 @@ class AtomicMemoryStore implements RegistrationStore {
         getReceipt: async (uid, id) =>
           this.receipts.get(`${uid}/${id}`) ?? null,
         getCounter: async () => this.counter,
-        getFreeNumbers: async () => this.free,
-        consumeFreeNumber: (numbers) =>
-          writes.push(() => {
-            this.free = [...numbers];
-          }),
         createSubject: (id, data) =>
           writes.push(() => {
             this.subjects.set(id, structuredClone(data));
@@ -275,19 +269,42 @@ test("Rules public-data whitelist stays in sync with the metadata-derived write 
   );
 });
 
-test("reusable allocations take the smallest released numbers before incrementing the high-water mark", async () => {
+test("deleted numbers, including the highest allocation, remain permanently consumed", async () => {
   const store = new AtomicMemoryStore();
-  store.counter = { lastAllocatedNumber: 4 };
-  store.free = [2, 4];
-  const first = await allocateSubject(store, "one", requestA, values());
-  const second = await allocateSubject(store, "two", requestA, values());
-  const third = await allocateSubject(store, "three", requestA, values());
+  const initial = [];
+  for (let index = 0; index < 4; index++) {
+    initial.push(
+      await allocateSubject(store, `owner-${index}`, requestA, values()),
+    );
+  }
+  store.subjects.delete(initial[2]!.subjectId);
+  store.subjects.delete(initial[3]!.subjectId);
+  const next = await allocateSubject(store, "four", requestA, values());
+  const [fifth, sixth] = await Promise.all([
+    allocateSubject(store, "five", requestA, values()),
+    allocateSubject(store, "six", requestA, values()),
+  ]);
   assert.deepEqual(
-    [first.subjectNumber, second.subjectNumber, third.subjectNumber],
-    [2, 4, 5],
+    [next.subjectCode, fifth.subjectCode, sixth.subjectCode],
+    ["AHT-004", "AHT-005", "AHT-006"],
   );
-  assert.equal((store.counter as CounterDocument).lastAllocatedNumber, 5);
-  assert.equal(store.free.length, 0);
+  assert.equal((store.counter as CounterDocument).lastAllocatedNumber, 6);
+});
+test("counter alone determines the next number despite missing records or old coupling metadata", async () => {
+  const store = new AtomicMemoryStore();
+  store.counter = {
+    lastAllocatedNumber: 998,
+    lastSubjectId: "deleted-subject",
+    lastRequestId: "historical-request",
+    lastCreatedByUid: "historical-owner",
+  };
+  const first = await allocateSubject(store, "owner", requestA, values());
+  const second = await allocateSubject(store, "owner", requestB, values());
+  assert.deepEqual(
+    [first.subjectCode, second.subjectCode],
+    ["AHT-999", "AHT-1000"],
+  );
+  assert.equal((store.counter as CounterDocument).lastAllocatedNumber, 1000);
 });
 test("revoked receipt cannot return a deleted registration as success or allocate again", async () => {
   const store = new AtomicMemoryStore();
@@ -297,8 +314,7 @@ test("revoked receipt cannot return a deleted registration as success or allocat
     `one/${requestA}`,
     Object.assign({ ...first }, { revoked: true }),
   );
-  store.free = [0];
   await assert.rejects(allocateSubject(store, "one", requestA, values()));
-  assert.deepEqual(store.free, [0]);
+  assert.equal((store.counter as CounterDocument).lastAllocatedNumber, 0);
   assert.equal(store.subjects.size, 0);
 });

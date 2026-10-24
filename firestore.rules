@@ -185,48 +185,13 @@ service cloud.firestore {
         && request.time.toMillis() / 1000 - request.auth.token.auth_time >= 0
         && request.time.toMillis() / 1000 - request.auth.token.auth_time <= 300;
     }
-    function poolNumbers() {
-      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
-      return exists(path) ? get(path).data.numbers : [];
-    }
-    function validPool(data) {
-      return data.keys().hasAll(['numbers', 'lastSubjectId', 'operation', 'insertIndex'])
-        && data.keys().size() == 4
-        && data.numbers is list && subjectId(data.lastSubjectId) && data.insertIndex is int;
-    }
-    function validAllocationNumber(subject, number, previous, next) {
-      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
-      let free = poolNumbers();
-      return free.size() > 0
-        ? number == free[0] && next == previous
-          && validPool(getAfter(path).data)
-          && getAfter(path).data.operation == 'allocate'
-          && getAfter(path).data.lastSubjectId == subject
-          && getAfter(path).data.insertIndex == -1
-          && getAfter(path).data.numbers == free.removeAll([number])
-        : number == previous + 1 && next == number
-          && (exists(path) ? getAfter(path).data == get(path).data : !existsAfter(path));
-    }
-    // The previous list is sorted by induction. Removing the inserted value must
-    // reproduce it exactly; checking adjacent values proves sorted insertion.
-    function validRelease(subject, data) {
-      let path = /databases/$(database)/documents/systemCounters/reusableSubjects;
-      let free = poolNumbers();
-      let after = getAfter(path).data;
-      let index = after.insertIndex;
+    // Deletion preserves the lifetime allocation history. Only the original
+    // receipt is tombstoned; no counter or reusable-number document is changed.
+    function validDeletion(subject, data) {
       let receiptPath = /databases/$(database)/documents/submissionRequests/$(data.createdByUid)/requests/$(data.requestId);
       return recentAdmin() && subjectId(subject) && validNumber(data.subjectNumber)
         && data.subjectNumber <= get(/databases/$(database)/documents/systemCounters/subjects).data.lastAllocatedNumber
         && !existsAfter(/databases/$(database)/documents/subjects/$(subject))
-        && validPool(after) && after.operation == 'release' && after.lastSubjectId == subject
-        && !free.hasAny([data.subjectNumber])
-        && after.numbers.size() == free.size() + 1
-        && after.numbers.toSet().size() == after.numbers.size()
-        && index >= 0 && index < after.numbers.size()
-        && after.numbers[index] == data.subjectNumber
-        && after.numbers.removeAll([data.subjectNumber]) == free
-        && (index == 0 || after.numbers[index - 1] < data.subjectNumber)
-        && (index == after.numbers.size() - 1 || after.numbers[index + 1] > data.subjectNumber)
         && get(receiptPath).data.subjectId == subject
         && get(receiptPath).data.subjectNumber == data.subjectNumber
         && !get(receiptPath).data.keys().hasAny(['revoked'])
@@ -252,7 +217,8 @@ service cloud.firestore {
       return previousCounter.lastAllocatedNumber is int && previousCounter.lastAllocatedNumber >= -1
         && !exists(subjectPath) && !exists(receiptPath)
         && validCounter(nextCounter)
-        && validAllocationNumber(subject, number, previousCounter.lastAllocatedNumber, nextCounter.lastAllocatedNumber)
+        && number == previousCounter.lastAllocatedNumber + 1
+        && nextCounter.lastAllocatedNumber == number
         && nextCounter.lastSubjectId == subject && nextCounter.lastRequestId == requestId
         && nextSubject.createdByUid == request.auth.uid && nextSubject.requestId == requestId
         && nextSubject.subjectNumber == number && nextSubject.subjectCode == code(number)
@@ -266,23 +232,16 @@ service cloud.firestore {
         && allocation(request.resource.data.lastSubjectId, request.resource.data.lastRequestId,
           getAfter(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data.subjectNumber);
     }
+    // Retired legacy pool. Its presence/content never affects allocation.
     match /systemCounters/reusableSubjects {
-      allow get: if anonymous() || admin();
-      allow list, delete: if false;
-      allow create: if recentAdmin() && validRelease(request.resource.data.lastSubjectId,
-        get(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data);
-      allow update: if (recentAdmin() && validRelease(request.resource.data.lastSubjectId,
-        get(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data))
-        || (anonymous() && allocation(request.resource.data.lastSubjectId,
-          getAfter(/databases/$(database)/documents/systemCounters/subjects).data.lastRequestId,
-          getAfter(/databases/$(database)/documents/subjects/$(request.resource.data.lastSubjectId)).data.subjectNumber));
+      allow read, write: if false;
     }
     match /subjects/{id} {
       allow get, list: if admin();
       allow create: if anonymous() && subjectId(id) && validSubject(request.resource.data)
         && allocation(id, request.resource.data.requestId, request.resource.data.subjectNumber);
       allow update: if validAdminEdit(resource.data, request.resource.data);
-      allow delete: if validRelease(id, resource.data);
+      allow delete: if validDeletion(id, resource.data);
     }
     match /submissionRequests/{uid}/requests/{id} {
       allow get: if admin() || (anonymous() && request.auth.uid == uid
@@ -292,7 +251,7 @@ service cloud.firestore {
       allow update: if recentAdmin()
         && uid == get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data.createdByUid
         && id == get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data.requestId
-        && validRelease(resource.data.subjectId, get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data);
+        && validDeletion(resource.data.subjectId, get(/databases/$(database)/documents/subjects/$(resource.data.subjectId)).data);
       allow create: if anonymous() && request.auth.uid == uid && validReceipt(request.resource.data, id)
         && allocation(request.resource.data.subjectId, id, request.resource.data.subjectNumber);
     }

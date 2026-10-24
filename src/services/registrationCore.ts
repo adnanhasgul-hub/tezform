@@ -1,4 +1,3 @@
-import { readFreeNumbers } from "./reusableNumbers.ts";
 import { toCrfValues } from "../components/crf/calculations.ts";
 import { publicSections } from "../components/crf/sections.ts";
 import { validatePublicCrf } from "../components/crf/validation.ts";
@@ -33,8 +32,6 @@ export interface CounterDocument {
 export interface RegistrationTransaction {
   getReceipt(uid: string, requestId: string): Promise<unknown | null>;
   getCounter(): Promise<unknown | null>;
-  getFreeNumbers?(): Promise<unknown>;
-  consumeFreeNumber?(numbers: number[], subjectId: string): void;
   createSubject(subjectId: string, data: SubjectDocument): void;
   createReceipt(
     uid: string,
@@ -131,14 +128,11 @@ export async function allocateSubject(
     if (typeof last !== "number" || !Number.isSafeInteger(last) || last < -1) {
       throw new Error("Counter is not initialized correctly");
     }
-    const free = transaction.getFreeNumbers
-      ? readFreeNumbers(await transaction.getFreeNumbers())
-      : [];
-    if (!free.length && last === Number.MAX_SAFE_INTEGER)
+    if (last === Number.MAX_SAFE_INTEGER)
       throw new Error("Counter exhausted");
-    if (free.length && free[0]! > last)
-      throw new Error("Invalid reusable counter");
-    const subjectNumber = free[0] ?? last + 1;
+    // The central counter is the only allocation source. Deleted records leave
+    // permanent gaps; no previously allocated number can be issued again.
+    const subjectNumber = last + 1;
     const result = {
       subjectId,
       subjectCode: formatSubjectCode(subjectNumber),
@@ -151,16 +145,11 @@ export async function allocateSubject(
     // failing a subject/receipt Rules check against the newly committed number.
     // All three writes still commit atomically and Rules still require exactly +1.
     transaction.updateCounter({
-      lastAllocatedNumber: free.length ? last : subjectNumber,
+      lastAllocatedNumber: subjectNumber,
       lastSubjectId: subjectId,
       lastRequestId: requestId,
       lastCreatedByUid: uid,
     });
-    if (free.length) {
-      if (!transaction.consumeFreeNumber)
-        throw new Error("Reusable pool unavailable");
-      transaction.consumeFreeNumber(free.slice(1), subjectId);
-    }
     transaction.createSubject(subjectId, {
       subjectCode: result.subjectCode,
       subjectNumber,
