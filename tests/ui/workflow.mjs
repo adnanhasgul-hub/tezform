@@ -59,6 +59,70 @@ try {
   await page.route("https://**", (route) => route.abort());
   const runtimeErrors = [];
   page.on("pageerror", (error) => runtimeErrors.push(error.message));
+
+  async function fillRequiredPublicAnswers() {
+    const next = () =>
+      page.getByRole("button", { name: /Sonraki Bölüm/ }).click();
+    const chooseFirstRadio = async (id) => {
+      await page.locator(`#crf-${id} input[type=radio]`).first().check();
+    };
+    const chooseCheckbox = async (id, label) => {
+      await page.locator(`#crf-${id}`).getByLabel(label, { exact: true }).check();
+    };
+
+    await page.locator("#crf-nationalId").fill("UI-DEMO");
+    await chooseFirstRadio("sex");
+    await page.locator("#crf-age").fill("45");
+    await page.locator("#crf-weight").fill("80");
+    await page.locator("#crf-height").fill("180");
+    await next();
+
+    await chooseFirstRadio("dailyDose");
+    await page.locator("#crf-treatmentDurationYears").fill("3");
+    await page.locator("#crf-treatmentDurationMonths").fill("4");
+    await chooseFirstRadio("adherence");
+    await page.locator("#crf-lastDoseTime").fill("12:30");
+    await next();
+
+    await chooseCheckbox("otherAntithrombotic", "Hayır");
+    await chooseFirstRadio("nsaid");
+    await chooseCheckbox("inhibitors", "Hiçbiri");
+    await chooseCheckbox("inducers", "Hiçbiri");
+    await next();
+
+    for (const id of [
+      "bruising",
+      "gingivalBleeding",
+      "epistaxis",
+      "cutBleeding",
+      "melena",
+      "hematochezia",
+      "hematemesis",
+      "hematuria",
+      "menorrhagia",
+      "headache",
+      "neurologicalSymptoms",
+      "hemarthrosis",
+      "hemoptysis",
+      "subconjunctivalBleeding",
+    ])
+      await chooseFirstRadio(id);
+    await next();
+
+    for (const id of [
+      "healthcareVisit",
+      "transfusion",
+      "treatmentInterruption",
+      "hemoglobinDrop",
+    ])
+      await chooseFirstRadio(id);
+    await next();
+
+    // The two approved optional fields remain intentionally blank.
+    await chooseFirstRadio("bleedingDayDose");
+    await page.locator("#crf-investigatorName").selectOption({ label: "Dr. Mehmet" });
+  }
+
   await page.goto(`${origin}/ui-harness`);
   await page.evaluate(async () => {
     const { injectIntoGlobalHook } = await import("/@react-refresh");
@@ -137,19 +201,17 @@ try {
     .getByRole("heading", { name: "Olgu rapor formu", exact: true })
     .waitFor();
   assert.equal(await page.locator("#crf-assessmentDate").count(), 0);
-  await page.locator("#crf-nationalId").fill("UI-DEMO");
-  await page.locator("#crf-weight").fill("80");
-  await page.locator("#crf-height").fill("180");
-  await page
+  const section7 = page
     .locator(".stepper")
-    .getByRole("button", { name: /^Bölüm 2:/ })
-    .click();
-  await page.locator("#crf-treatmentDurationYears").fill("3");
-  await page.locator("#crf-treatmentDurationMonths").fill("4");
-  await page
-    .locator(".stepper")
-    .getByRole("button", { name: /^Bölüm 7:/ })
-    .click();
+    .getByRole("button", { name: /^Bölüm 7:/ });
+  assert(await section7.isDisabled());
+  await page.getByRole("button", { name: /Sonraki Bölüm/ }).click();
+  await page.getByText("Bu alan zorunludur.", { exact: true }).first().waitFor();
+  assert.equal(await page.locator("#crf-nationalId").count(), 1);
+
+  await fillRequiredPublicAnswers();
+  assert.equal(await page.locator("#crf-bleedingOnsetInterval").inputValue(), "");
+  assert.equal(await page.locator("#crf-researchNotes").inputValue(), "");
   const save = page.getByRole("button", { name: "Formu Kaydet", exact: true });
   await save.click();
   await page
@@ -234,7 +296,7 @@ try {
   await page.getByText("Başlangıç ekranı", { exact: true }).waitFor();
   assert(!(await page.locator(".print-sheet").innerText()).includes("UI-DEMO"));
   console.log(
-    "PASS save pending/failure/retry; UUID reuse; required modal Escape/overlay lock; copy failure; acknowledgment; print without new allocation; close clears session",
+    "PASS required progression; optional Section 7 text fields; save pending/failure/retry; UUID reuse; required modal Escape/overlay lock; copy failure; acknowledgment; print without new allocation; close clears session",
   );
 
   // Actual /admin page: generic wrong-username error, no email field or dashboard.
@@ -256,7 +318,16 @@ try {
     0,
   );
   await page.goto(origin);
-  await page.getByRole("button", { name: "Form Yazdır", exact: true }).click();
+  assert.equal(
+    await page.getByRole("heading", {
+      name: "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu",
+      exact: true,
+    }).count(),
+    0,
+  );
+  await page
+    .getByRole("button", { name: "Boş Form Yazdır", exact: true })
+    .click();
   assert.equal(
     await page
       .locator(".paper-checkbox")
@@ -275,10 +346,7 @@ try {
   await page.getByRole("button", { name: "Forma Dön", exact: true }).click();
   await page.getByRole("radio", { name: "Hayır", exact: true }).check();
   await page.getByRole("button", { name: "Formu Doldur", exact: true }).click();
-  await page
-    .locator(".stepper")
-    .getByRole("button", { name: /^Bölüm 7:/ })
-    .click();
+  await fillRequiredPublicAnswers();
   assert.equal(await page.locator("#crf-assessmentDate").count(), 0);
   await page.getByRole("button", { name: "Formu Kaydet", exact: true }).click();
   await page
@@ -289,7 +357,7 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   assert.deepEqual(runtimeErrors, []);
   console.log(
-    "PASS actual admin guard/wrong alias/no email; blank print unmarked; missing Firebase never yields a success/code; no runtime errors",
+    "PASS duplicate center title removed; actual admin guard/wrong alias/no email; blank print unmarked; required answers pass before missing Firebase error; no runtime errors",
   );
   // Stress-print all fields with synthetic values, including the future admin section.
   await page.evaluate(async () => {
