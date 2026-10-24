@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AdminLoginError,
   loginAdmin,
@@ -6,7 +6,26 @@ import {
   observeAdminSession,
   type AdminSession,
 } from "../services/auth";
+import {
+  listAdminSubjects,
+  type AdminSubjectSummary,
+} from "../services/adminRecords";
 import { adminUsernameAlias } from "../services/authPolicy";
+
+type StatusFilter = "all" | "pending_completion" | "completed";
+
+const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function formatDate(value: Date | null) {
+  return value ? dateFormatter.format(value) : "—";
+}
+
+function statusLabel(status: AdminSubjectSummary["status"]) {
+  return status === "completed" ? "Tamamlandı" : "Tamamlanmayı Bekliyor";
+}
 
 export function AdminPage() {
   const [session, setSession] = useState<AdminSession>({ status: "checking" });
@@ -14,8 +33,57 @@ export function AdminPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [subjects, setSubjects] = useState<AdminSubjectSummary[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [subjectsError, setSubjectsError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   useEffect(() => observeAdminSession(setSession), []);
+
+  const refreshSubjects = useCallback(async () => {
+    setLoadingSubjects(true);
+    setSubjectsError("");
+    try {
+      setSubjects(await listAdminSubjects());
+    } catch {
+      setSubjectsError(
+        "Hasta kayıtları yüklenemedi. Bağlantıyı kontrol edip tekrar deneyin.",
+      );
+    } finally {
+      setLoadingSubjects(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (session.status === "authorized") void refreshSubjects();
+    else setSubjects([]);
+  }, [session.status, refreshSubjects]);
+
+  const counts = useMemo(
+    () => ({
+      total: subjects.length,
+      pending: subjects.filter(
+        (subject) => subject.status === "pending_completion",
+      ).length,
+      completed: subjects.filter((subject) => subject.status === "completed")
+        .length,
+    }),
+    [subjects],
+  );
+
+  const filteredSubjects = useMemo(() => {
+    const needle = search.trim().toLocaleUpperCase("tr-TR");
+    return subjects.filter((subject) => {
+      const matchesStatus =
+        statusFilter === "all" || subject.status === statusFilter;
+      const matchesSearch =
+        !needle ||
+        subject.subjectCode.toLocaleUpperCase("tr-TR").includes(needle) ||
+        String(subject.subjectNumber).includes(needle.replace(/\D/g, ""));
+      return matchesStatus && matchesSearch;
+    });
+  }, [search, statusFilter, subjects]);
 
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -53,6 +121,157 @@ export function AdminPage() {
     }
   }
 
+  if (session.status === "authorized") {
+    return (
+      <div className="app-shell admin-shell">
+        <header className="admin-topbar">
+          <div>
+            <p className="eyebrow">TEZFORM · YÖNETİCİ ALANI</p>
+            <h1>Yönetici Paneli</h1>
+          </div>
+          <div className="admin-topbar-actions">
+            <a className="button secondary" href="/">
+              Forma Dön
+            </a>
+            <button
+              type="button"
+              className="button secondary"
+              disabled={busy}
+              onClick={() => void logout()}
+            >
+              Çıkış Yap
+            </button>
+          </div>
+        </header>
+
+        <main className="admin-dashboard">
+          <section className="admin-stats" aria-label="Kayıt özeti">
+            <article className="admin-stat-card">
+              <span>Toplam Hasta</span>
+              <strong>{counts.total}</strong>
+            </article>
+            <article className="admin-stat-card">
+              <span>Tamamlanmayı Bekleyen</span>
+              <strong>{counts.pending}</strong>
+            </article>
+            <article className="admin-stat-card">
+              <span>Tamamlanan</span>
+              <strong>{counts.completed}</strong>
+            </article>
+          </section>
+
+          <section className="admin-records" aria-labelledby="records-title">
+            <div className="admin-records-heading">
+              <div>
+                <p className="eyebrow">ARAŞTIRMA KAYITLARI</p>
+                <h2 id="records-title">Hasta Kayıtları</h2>
+              </div>
+              <button
+                type="button"
+                className="button secondary"
+                disabled={loadingSubjects}
+                onClick={() => void refreshSubjects()}
+              >
+                {loadingSubjects ? "Yükleniyor…" : "Listeyi Yenile"}
+              </button>
+            </div>
+
+            <div className="admin-filters">
+              <label>
+                <span>Hasta kodu ile ara</span>
+                <input
+                  type="search"
+                  placeholder="Örn. AHT-001 veya 001"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>Durum</span>
+                <select
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(event.target.value as StatusFilter)
+                  }
+                >
+                  <option value="all">Tümü</option>
+                  <option value="pending_completion">
+                    Tamamlanmayı Bekleyen
+                  </option>
+                  <option value="completed">Tamamlanan</option>
+                </select>
+              </label>
+            </div>
+
+            {subjectsError && (
+              <p className="field-error" role="alert">
+                {subjectsError}
+              </p>
+            )}
+
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Hasta Kodu</th>
+                    <th scope="col">Kayıt Tarihi</th>
+                    <th scope="col">Durum</th>
+                    <th scope="col">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSubjects.map((subject) => (
+                    <tr key={subject.id}>
+                      <td>
+                        <strong className="admin-subject-code">
+                          {subject.subjectCode}
+                        </strong>
+                      </td>
+                      <td>{formatDate(subject.createdAt)}</td>
+                      <td>
+                        <span
+                          className={`admin-status admin-status-${subject.status}`}
+                        >
+                          {statusLabel(subject.status)}
+                        </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="button secondary admin-action-button"
+                          disabled
+                          title="Bölüm 4 tamamlama ekranı bir sonraki adımda etkinleştirilecek."
+                        >
+                          {subject.status === "completed"
+                            ? "Görüntüle"
+                            : "Formu Tamamla"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {!loadingSubjects && filteredSubjects.length === 0 && (
+                    <tr>
+                      <td className="admin-empty" colSpan={4}>
+                        {subjects.length === 0
+                          ? "Henüz hasta kaydı bulunmuyor."
+                          : "Arama ve filtreye uygun kayıt bulunamadı."}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="admin-list-note">
+              Bu ekran yalnızca yetkili yönetici oturumunda Firestore'daki hasta
+              kayıtlarını okur. Bölüm 4 düzenleme ve tamamlama işlemi bir sonraki
+              adımda etkinleştirilecektir.
+            </p>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <main className="admin-page" style={{ maxWidth: 480, padding: "32px 0" }}>
@@ -63,26 +282,10 @@ export function AdminPage() {
         >
           <p className="eyebrow">TEZFORM · YÖNETİCİ ALANI</p>
           <h1 id="admin-page-title" style={{ fontSize: 28 }}>
-            {session.status === "authorized"
-              ? "Yönetici Paneli"
-              : "Yönetici Girişi"}
+            Yönetici Girişi
           </h1>
           {session.status === "checking" ? (
             <p role="status">Yetki kontrol ediliyor…</p>
-          ) : session.status === "authorized" ? (
-            <>
-              <p>Hasta kayıtları sonraki aşamada burada listelenecek.</p>
-              <button
-                type="button"
-                className="button secondary"
-                disabled={busy}
-                onClick={() => {
-                  void logout();
-                }}
-              >
-                Çıkış Yap
-              </button>
-            </>
           ) : (
             <>
               {session.status === "unauthorized" && (
@@ -138,9 +341,7 @@ export function AdminPage() {
                   className="button secondary"
                   style={{ marginTop: 12 }}
                   disabled={busy}
-                  onClick={() => {
-                    void logout();
-                  }}
+                  onClick={() => void logout()}
                 >
                   Çıkış Yap
                 </button>
