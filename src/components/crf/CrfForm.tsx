@@ -88,12 +88,30 @@ export function CrfForm({
     setValues((previous) => recalculateDerived({ ...previous, [id]: value }));
     setSaveError("");
   }
+  function getFirstActiveError() {
+    return active.fields.find((field) => errors[field.id]);
+  }
+  function blockOnActiveErrors(): boolean {
+    const invalid = getFirstActiveError();
+    if (!invalid) return false;
+    setAttempted((previous) => new Set(previous).add(active.id));
+    navigate(activeIndex, invalid.id);
+    return true;
+  }
   function next() {
-    const invalid = active.fields.find((field) => errors[field.id]);
-    if (invalid) {
-      setAttempted((previous) => new Set(previous).add(active.id));
-      navigate(activeIndex, invalid.id);
-    } else navigate(activeIndex + 1);
+    if (blockOnActiveErrors()) return;
+    navigate(activeIndex + 1);
+  }
+  function selectSection(index: number) {
+    if (index <= activeIndex) {
+      navigate(index);
+      return;
+    }
+    const target = publicSections[index];
+    const isReachable =
+      index === activeIndex + 1 || (target ? visited.has(target.id) : false);
+    if (!isReachable || blockOnActiveErrors()) return;
+    navigate(index);
   }
   async function validateAll() {
     if (submittingRef.current || result) return;
@@ -182,8 +200,13 @@ export function CrfForm({
         <summary>Form hakkında</summary>
         <p>
           Cevaplar Formu Kaydet işlemi başarılı olana kadar yalnızca sayfa
-          belleğinde tutulur. Sayfayı yenilemeyin. Otomatik bölüm geçişi
-          kapalıdır; boş cevaplar bir seçenek olarak yorumlanmaz.
+          belleğinde tutulur. Sayfayı yenilemeyin. İlgili bölümdeki zorunlu
+          sorular tamamlanmadan sonraki bölüme geçilemez.
+        </p>
+        <p>
+          <strong>Bölüm 7:</strong> “İlk Kanama Belirtisi Apixaban Başlandıktan
+          Ne Kadar Süre Sonra Çıktı?” ve “Araştırmacı Hekim Notu / Klinik
+          Gözlem” alanları isteğe bağlıdır.
         </p>
         <p>
           <strong>Bölüm 4:</strong> {investigationsNotice}
@@ -198,10 +221,12 @@ export function CrfForm({
                 Object.keys(validateSection(section, values)).length > 0 &&
                 (showAllErrors || attempted.has(section.id));
               const status = hasErrors
-                ? "Biçim hatası"
+                ? "Eksik veya hatalı"
                 : visited.has(section.id)
                   ? "Ziyaret edildi"
                   : "Henüz görüntülenmedi";
+              const isLockedAhead =
+                index > activeIndex + 1 && !visited.has(section.id);
               return (
                 <li key={section.id}>
                   <button
@@ -209,7 +234,8 @@ export function CrfForm({
                     className={`step-button${hasErrors ? " has-errors" : ""}`}
                     aria-label={`Bölüm ${section.number}: ${section.title}. ${index === activeIndex ? "Aktif. " : ""}${status}`}
                     aria-current={index === activeIndex ? "step" : undefined}
-                    onClick={() => navigate(index)}
+                    disabled={isLockedAhead}
+                    onClick={() => selectSection(index)}
                   >
                     <span className="step-number">{section.number}</span>
                     <span className="step-copy">
