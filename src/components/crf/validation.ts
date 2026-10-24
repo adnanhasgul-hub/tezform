@@ -10,8 +10,24 @@ import { isFieldVisible, publicSections } from "./sections.ts";
 
 export type CrfErrors = Partial<Record<FieldId, string>>;
 
-// The source questionnaire specifies no mandatory answers or clinical numeric limits.
-// Validate only the format of supplied, currently applicable answers.
+const optionalPublicFieldIds = new Set<FieldId>([
+  "bleedingOnsetInterval",
+  "researchNotes",
+]);
+
+function isBlankValue(value: CrfValue): boolean {
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "string") return value.trim() === "";
+  return value === null;
+}
+
+export function isPublicFieldRequired(field: CrfField): boolean {
+  return !field.readOnly && !optionalPublicFieldIds.has(field.id);
+}
+
+// Field-level validation remains format-only. Required-answer policy is applied
+// by validateSection only to visible public fields, so conditional follow-up
+// questions become mandatory only when their parent answer makes them applicable.
 export function validateField(
   field: CrfField,
   value: CrfValue,
@@ -77,7 +93,16 @@ export function validateSection(
   const errors: CrfErrors = {};
   for (const field of section.fields) {
     if (!isFieldVisible(field, values)) continue;
-    const error = validateField(field, values[field.id]);
+    const value = values[field.id];
+    if (
+      section.entryRole === "public" &&
+      isPublicFieldRequired(field) &&
+      isBlankValue(value)
+    ) {
+      errors[field.id] = "Bu alan zorunludur.";
+      continue;
+    }
+    const error = validateField(field, value);
     if (error) errors[field.id] = error;
   }
   return errors;
