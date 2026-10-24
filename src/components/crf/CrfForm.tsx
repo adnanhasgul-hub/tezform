@@ -227,10 +227,7 @@ export function CrfForm({
         ref={formRef}
         autoComplete="off"
         noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (isLast) void validateAll();
-        }}
+        onSubmit={(event) => event.preventDefault()}
       >
         <section
           className="form-section"
@@ -333,7 +330,12 @@ export function CrfForm({
             Önceki Bölüm
           </button>
           {isLast ? (
-            <button className="button primary" type="submit" disabled={busy}>
+            <button
+              className="button primary"
+              type="button"
+              disabled={busy}
+              onClick={() => void validateAll()}
+            >
               {busy ? "Kaydediliyor..." : "Formu Kaydet"}
             </button>
           ) : (
