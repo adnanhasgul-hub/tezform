@@ -2,6 +2,8 @@ import { createAdminRecordDraft } from "../services/adminModel";
 import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
 import { AdminRowActions } from "../components/AdminRowActions";
 import { ResearchDataCenter } from "../components/ResearchDataCenter";
+import { ResearchExports } from "../components/ResearchExports";
+import { SpssDictionary } from "../components/SpssDictionary";
 import {
   investigationState,
   investigationLabels,
@@ -59,6 +61,7 @@ export function AdminPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selection, setSelection] = useState<RecordSelection | null>(null);
   const [researchCenterOpen, setResearchCenterOpen] = useState(false);
+  const [dictionaryOpen, setDictionaryOpen] = useState(false);
 
   const refreshSubjects = useCallback(async () => {
     setLoadingSubjects(true);
@@ -83,6 +86,7 @@ export function AdminPage() {
           setSubjects([]);
           setSelection(null);
           setResearchCenterOpen(false);
+          setDictionaryOpen(false);
         }
       }),
     [refreshSubjects],
@@ -187,6 +191,7 @@ export function AdminPage() {
               aria-current={researchCenterOpen ? "page" : undefined}
               onClick={() => {
                 setSelection(null);
+                setDictionaryOpen(false);
                 setResearchCenterOpen((previous) => !previous);
               }}
             >
@@ -194,6 +199,18 @@ export function AdminPage() {
                 ? "Yönetici Paneli"
                 : "Araştırma Veri Merkezi"}
             </button>
+            {researchCenterOpen && !dictionaryOpen && (
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => {
+                  setSelection(null);
+                  setDictionaryOpen(true);
+                }}
+              >
+                SPSS Veri Sözlüğü
+              </button>
+            )}
             <a className="button secondary" href="/">
               Forma Dön
             </a>
@@ -210,7 +227,7 @@ export function AdminPage() {
 
         <main className="admin-dashboard">
           {researchCenterOpen && (
-            <div hidden={Boolean(selection)}>
+            <div hidden={Boolean(selection) || dictionaryOpen}>
               <ResearchDataCenter
                 subjects={subjects}
                 loading={loadingSubjects}
@@ -221,10 +238,15 @@ export function AdminPage() {
                   setResearchCenterOpen(false);
                 }}
                 onView={(id) => setSelection({ id, mode: "view" })}
+                renderExports={(records, scope) => (
+                  <ResearchExports records={records} scope={scope} />
+                )}
               />
             </div>
           )}
-          {selection && selectedSubject ? (
+          {dictionaryOpen ? (
+            <SpssDictionary onBack={() => setDictionaryOpen(false)} />
+          ) : selection && selectedSubject ? (
             selection.mode === "delete" ? (
               <AdminDeleteDialog
                 subject={selectedSubject}

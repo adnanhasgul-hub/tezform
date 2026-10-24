@@ -1,6 +1,6 @@
 # ADNAN TEZ FORMU
 
-React + TypeScript + Vite eCRF; Firebase **Spark** üzerinde Hosting, Authentication ve Firestore kullanır. Cloud Functions, Cloud Run, Admin SDK backend veya ücretli backend yoktur. PR #11 ile yönetici kayıt yönetimi production’a yayınlandı; önceki Rules sürümü emulator üzerinde 21/21 PASS aldı. Bu hotfix AHT kodlarının yeniden kullanımını kaldırır; yeni Rules ve uygulama için kontrollerin ve yayınların ayrıca tamamlanması gerekir. Mevcut iki sayfalık print optimizasyonu korunmuştur.
+React + TypeScript + Vite eCRF; Firebase **Spark** üzerinde Hosting, Authentication ve Firestore kullanır. Cloud Functions, Cloud Run veya Admin SDK backend yoktur. Monotonik AHT tahsisi ve silinen kodların tekrar kullanılmaması production’da doğrulanmıştır. Bu feature branch Phase A–D geliştirmelerini içerir; yeni Rules ve Hosting yayınları ayrıca doğrulanmalıdır. Allocation/silme transaction mantığı bu fazda değiştirilmemiştir.
 
 ## Geliştirme ve kontroller
 
@@ -133,7 +133,7 @@ Mevcut production ortamında Auth sağlayıcıları, admin ve counter kurulmuşt
 
 ## Bu çalışma ortamındaki doğrulama sınırı
 
-Önceki sürümün 21 Rules testi GitHub Actions üzerinde geçti. Yeni hotfix testleri bu sonuçtan bağımsız yeniden çalıştırılmalıdır. Yerel emulator JAR indirmesi `storage.googleapis.com` CONNECT **403** ile engellenirse `npm run test:rules` güvenilir CI ortamında çalıştırılmalıdır; unit testler gerçek Rules testlerinin yerine geçmez. Emulator yalnız demo projesini kullanır; production’da deneme hasta kaydı oluşturmayın.
+Phase 2 Rules testleri GitHub Actions üzerinde 31/31 PASS aldı. Son feature commit’i için CI yeniden çalıştırılır. Yerel emulator JAR indirmesi `storage.googleapis.com` CONNECT **403** ile engellenirse `npm run test:rules` güvenilir CI ortamında çalıştırılmalıdır; unit testler gerçek Rules testlerinin yerine geçmez. Emulator yalnız demo projesini kullanır; production’da deneme hasta kaydı oluşturmayın.
 
 ## Yönetici kayıt yönetimi ve kalıcı AHT tahsisi
 
@@ -162,3 +162,20 @@ Eski tek taraflı `dvtLocations` güvenle ilgili tarafa eşlenir. Eski bilateral
 Veri Merkezi yalnız yetkili admin oturumunda, mevcut `subjects` dataset’iyle çalışır. Operasyonel toplam/durum/hekim/son kayıt özetleri ve AHT, hekim, durum, kayıt tarihi filtreleri client-side hesaplanır. Tarih aralığının iki yerel takvim günü de dahildir. Yeni Firestore collection/index veya yazma işlemi yoktur.
 
 Sorumluluk sınırı: `researchData.ts` ve `ResearchDataCenter.tsx` hangi kayıtların kullanılacağını belirler. Scope `filtered` veya `all` olur; aynı seçilmiş readonly dizi `renderExports(records, scope)` üzerinden sonraki export katmanına iletilir. Phase C dosya üretmez, SPSS schema/mapping veya veri sözlüğü içermez; export callback verilmediğinde işlevsiz buton gösterilmez.
+
+## Phase D: export ve SPSS veri sözleşmesi
+
+Veri akışı: yetkili Firestore kayıtları → Phase C filtreleri → seçilmiş `filtered`/`all` readonly kayıt dizisi → `ResearchExports` → Phase D export motoru. Phase D yeniden filtrelemez, Firestore’a yazmaz, counter veya receipt okumaz/değiştirmez. Phase C dashboard/filtre dosyaları Phase D’de değiştirilmez.
+
+`src/export/spssSchema.ts` versiyon **1.0** tek analitik sözleşmedir. **71 CRF alanından** 31 bağımsız çoklu-seçim binary değişkeniyle toplam **102 SPSS değişkeni** üretilir. Toplam ayrıca AHT kodu/numarası, kayıtlı toplam tedavi ayı, operasyonel tamamlama durumu ve iki legacy DVT veri kalitesi alanını içerir. Runtime klinik seçenekleri metadata’dan gelir; machine isimleri field ID ve sabit suffix’lerden gelir. `tests/fixtures/spss-schema-v1.json` isim/kod/alan eşleştirmesini sürüm sözleşmesi olarak sabitler; klinik seçenek/mapping değişikliği bilinçli sürüm incelemesi gerektirir.
+
+- **Excel'e Aktar:** `tezform_crf.xlsx`, Türkçe kolonlar, Bölüm 1–7, hasta başına tek satır. Kimlikler ve serbest metinler String tipidir; formül çalıştırılmaz. Sayısal laboratuvar değerleri numeric hücredir; `<5` gibi yorum gerektiren kaynak metinler insan Excel’inde aynen korunur.
+- **SPSS İçin Dışa Aktar:** `tezform_spss.zip`; yalnız `tezform_spss_data.xlsx`, `tezform_spss_syntax.sps`, `tezform_spss_codebook.xlsx`, `README.txt`. Şema sürümü README ve codebook’un `Schema` sayfasındadır. Binary `.sav` üretilmez; syntax import/metadata sonrasında SPSS içinden kaydedilebilir.
+- **SPSS Veri Sözlüğü:** aynı schema’dan 102 değişken; isim/açıklama/field key araması ve 1–7 bölüm filtresi. Missing/dönüşüm açıklamaları açılabilir. Kayıt filtrelerinin durumunu değiştirmez.
+- **PDF Olarak İndir:** tüm schema’yı kapsayan çok sayfalı A4 landscape PDF; Unicode Noto Sans fontu ve lisansı `public/fonts/` altında, başka servise veri gönderilmez. PDF arama filtresinden bağımsızdır.
+
+Missing ile 0 farklıdır: yanıtlanmış multiselect’te seçili=1, diğer seçenekler=0; yanıtsız/uygulanamaz/belirsiz alanlar missing kalır. Sayısal boş/geçersiz/eşik metni SPSS’te boş hücre/SYSMIS’tir, 999 gibi sentinel uydurulmaz. Bilinmiyor/Uygulanamaz gibi açık kategoriler kendi kodunu korur. Tarih ve saat ISO/tam saat metni olarak korunur; timezone veya klinik sonuç tahmini yapılmaz. Eski ortak bilateral/tarafsız DVT metni ayrı kalite alanında korunur; sağ/sola dağıtılmaz.
+
+Syntax, schema’dan `VARIABLE LABELS`, `VALUE LABELS`, `VARIABLE LEVEL`, `MISSING VALUES`, tür ve format üretir. ZIP’i çıkarıp `.sps` dosyasındaki XLSX yolunu ayarlayın; UTF-8 ile SPSS’te çalıştırın. String genişlikleri paketteki en uzun UTF-8 değere göre belirlenir; formatlar kaynak sayıları yuvarlamaz. Excel/SPSS metin sınırını aşan içerik kesilmez: aktarım hata verir. Kaynak kayıt değişmez. Gerçek SPSS yazılımında çalıştırma ortamın test kapsamı dışındadır; syntax standart SPSS komutlarıdır.
+
+XLSX/ZIP içeriğinin zaman metadata’sı sabittir; aynı veri/scope aynı dosyaları üretir. Üretim kütüphaneleri `write-excel-file`, `fflate`, `pdf-lib`, `@pdf-lib/fontkit` browser uyumludur; export ve PDF motorları yalnız gerektiğinde yüklenir. Klinik/istatistiksel analiz, p-value veya outcome yorumu yapılmaz.
