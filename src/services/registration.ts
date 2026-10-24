@@ -1,3 +1,4 @@
+import { retryRegistration, RegistrationSaveError } from "./registrationRetry";
 import {
   collection,
   doc,
@@ -16,12 +17,7 @@ export class RegistrationConnectionError extends Error {
     this.name = "RegistrationConnectionError";
   }
 }
-export class RegistrationSaveError extends Error {
-  constructor() {
-    super("Registration could not be saved");
-    this.name = "RegistrationSaveError";
-  }
-}
+export { RegistrationSaveError } from "./registrationRetry";
 
 export async function registerSubject(
   draft: CrfDraftValues,
@@ -67,7 +63,9 @@ export async function registerSubject(
           }),
         ),
     };
-    return await allocateSubject(store, user.uid, requestId, publicValues);
+    return await retryRegistration(() =>
+      allocateSubject(store, user.uid, requestId, publicValues),
+    );
   } catch {
     // Do not return Firebase error details or attach the research payload to errors.
     throw new RegistrationSaveError();

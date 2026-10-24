@@ -1,3 +1,4 @@
+import { retryRegistration } from "../../src/services/registrationRetry.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { after, before, beforeEach, test } from "node:test";
@@ -101,7 +102,7 @@ async function allocate(
 ) {
   const subjectRef = doc(collection(db, "subjects"));
   const receiptRef = doc(db, `submissionRequests/${uid}/requests/${requestId}`);
-  return runTransaction(db, async (transaction) => {
+  return retryRegistration(() => runTransaction(db, async (transaction) => {
     const receipt = await transaction.get(receiptRef);
     if (receipt.exists()) return receipt.data();
     const counterRef = doc(db, "systemCounters/subjects");
@@ -126,7 +127,7 @@ async function allocate(
     transaction.set(subjectRef, data);
     transaction.set(receiptRef, result);
     return result;
-  });
+  }));
 }
 
 test("unauthenticated users cannot read counter/admin/subjects or create subjects", async () => {
@@ -194,7 +195,7 @@ test("two concurrent collectors receive distinct sequential codes; 999 rolls ove
   ]);
   assert(
     transactionAttempts >= 3,
-    "A real SDK transaction retry must resolve the forced counter conflict",
+    "Native or application retry must resolve the forced counter conflict",
   );
   assert.deepEqual(results.map((result) => result.subjectCode).sort(), [
     "AHT-000",
