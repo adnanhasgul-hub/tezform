@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { clearInactiveDvt } from "../../services/dvtModel";
 import { getTreatmentDuration } from "./calculations";
 import { useEffect, useRef } from "react";
 import type { CrfField, CrfDraftValues } from "../../types/crf";
@@ -108,6 +109,7 @@ export function PrintCrf({
     }
   }, [preview]);
   if (blocked) return null;
+  const printValues = values ? clearInactiveDvt(values) : undefined;
   return createPortal(
     <section
       className={`print-view${preview ? " is-preview" : ""}`}
@@ -160,7 +162,7 @@ export function PrintCrf({
               </p>
             ) : null}
             {section.fields.flatMap((source) => {
-              const field = getFieldForDisplay(source, values, "print");
+              const field = getFieldForDisplay(source, printValues, "print");
               return !field
                 ? []
                 : [
@@ -170,7 +172,7 @@ export function PrintCrf({
                           {field.group}
                         </h3>
                       )}
-                      <PrintField field={field} values={values} />
+                      <PrintField field={field} values={printValues} />
                     </div>,
                   ];
             })}

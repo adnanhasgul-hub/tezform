@@ -346,3 +346,27 @@ test("legacy unilateral and ambiguous bilateral records remain admin-readable an
     assert(!("dvtLocations" in saved));
   }
 });
+
+
+test("compact canonical validator rejects every missing key, including replacement by an extra key, for complete and partial writes", async () => {
+  const admin = password("admin-user");
+  for (const status of ["completed", "pending_completion"]) {
+    const canonical = { ...investigations(), ...(status === "pending_completion" ? { bun: "" } : {}) };
+    await assertSucceeds(updateDoc(doc(admin, subjectPath), {
+      investigations: canonical,
+      status,
+      updatedAt: serverTimestamp(),
+    }));
+    for (const key of Object.keys(canonical)) {
+      const missing: Record<string, unknown> = { ...canonical };
+      delete missing[key];
+      for (const invalid of [missing, { ...missing, unauthorizedReplacement: "" }]) {
+        await assertFails(updateDoc(doc(admin, subjectPath), {
+          investigations: invalid,
+          status,
+          updatedAt: serverTimestamp(),
+        }));
+      }
+    }
+  }
+});

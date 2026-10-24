@@ -75,9 +75,9 @@ test("Rules Section 4 schema matches canonical metadata without drifting", async
     new URL("../firestore.rules", import.meta.url),
     "utf8",
   );
-  const body = rules.split("function validInvestigations(data, completed)")[1]!;
-  const list = /data\.keys\(\)\.hasAll\(\[([^\]]+)\]\)/.exec(body)![1]!;
-  const ids = [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const body = rules.split("function validInvestigations(data, completed)")[1]!.split("function investigationsComplete")[0]!;
+  assert(/data\.keys\(\)\.size\(\)\s*==\s*22/.test(body));
+  const ids = [...new Set([...body.matchAll(/data\.([A-Za-z0-9_]+)/g)].map(match => match[1]).filter(name => name !== "keys"))];
   assert.deepEqual(
     ids.sort(),
     investigationSection.fields.map((field) => field.id).sort(),

@@ -124,9 +124,10 @@ service cloud.firestore {
         && (!data.dvtSide.hasAny(['Sağ']) || data.dvtRightLocations.size() > 0)
         && (!data.dvtSide.hasAny(['Sol']) || data.dvtLeftLocations.size() > 0);
     }
+    // Every canonical key is read/type-checked below. Missing keys deny, while
+    // the exact size excludes extras without a redundant 22-item hasAll pass.
     function validInvestigations(data, completed) {
       return data is map
-        && data.keys().hasAll(['dvtSide', 'dvtRightLocations', 'dvtLeftLocations', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
         && data.keys().size() == 22
         && validDvtLocations(data.dvtRightLocations)
         && validDvtLocations(data.dvtLeftLocations)
@@ -180,10 +181,11 @@ service cloud.firestore {
         ;
     }
     function validAdminEdit(before, after) {
+      let changed = after.diff(before).affectedKeys();
       return admin()
-        && after.diff(before).affectedKeys().hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
+        && changed.hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
         && after.updatedAt == request.time
-        && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublicValues(after.publicValues))
+        && (!changed.hasAny(['publicValues']) || validPublicValues(after.publicValues))
         && (after.status == 'completed'
           ? validInvestigations(after.investigations, true)
           : after.status == 'pending_completion'
