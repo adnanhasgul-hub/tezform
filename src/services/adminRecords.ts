@@ -96,3 +96,14 @@ export async function completeAdminSubject(
     updatedAt: serverTimestamp(),
   });
 }
+
+export async function updateAdminSubjectInvestigations(
+  subjectId: string,
+  investigations: InvestigationValues,
+): Promise<void> {
+  if (!db) throw new Error("Firestore unavailable");
+  await updateDoc(doc(db, "subjects", subjectId), {
+    investigations,
+    updatedAt: serverTimestamp(),
+  });
+}
