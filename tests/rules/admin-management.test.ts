@@ -210,6 +210,19 @@ test("full edit updates clinical data but preserves identity, counter and receip
     { requestId: request(99) },
   ])
     await assertFails(updateDoc(ref, { ...patch, ...identity }));
+  for (const key of [
+    "bmi",
+    "treatmentDurationYears",
+    "treatmentDurationMonths",
+    "treatmentDurationTotalMonths",
+  ]) {
+    const invalid: Record<string, unknown> = {
+      ...values,
+      extra: "not allowed",
+    };
+    delete invalid[key];
+    await assertFails(updateDoc(ref, { ...patch, publicValues: invalid }));
+  }
   for (const denied of [anon(), admin("not-admin")])
     await assertFails(
       updateDoc(doc(denied, "subjects", result.subjectId), patch),

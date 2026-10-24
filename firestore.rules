@@ -109,10 +109,12 @@ service cloud.firestore {
         && data.investigations is map && data.investigations.size() == 0
         && validPublic(data.publicValues);
     }
-    function shortText(value) {
-      return value is string && value.size() <= 32;
+    function shortText(value, completed) {
+      // matches() accepts strings only; other types error and therefore deny.
+      return value.size() <= 32 && (completed
+        ? value.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*') : value is string);
     }
-    function validInvestigations(data) {
+    function validInvestigations(data, completed) {
       return data is map
         && data.keys().hasAll(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
         && data.keys().size() == 21
@@ -122,25 +124,26 @@ service cloud.firestore {
         && data.dvtSide is list
         && data.dvtSide.toSet().size() == data.dvtSide.size()
         && data.dvtSide.hasOnly(['Sağ', 'Sol'])
-        && shortText(data.bun)
-        && shortText(data.creatinine)
-        && shortText(data.egfr)
-        && shortText(data.calcium)
-        && shortText(data.sodium)
-        && shortText(data.potassium)
-        && shortText(data.totalBilirubin)
-        && shortText(data.directBilirubin)
-        && shortText(data.ast)
-        && shortText(data.alt)
-        && shortText(data.totalProtein)
-        && shortText(data.albumin)
-        && shortText(data.wbc)
-        && shortText(data.hemoglobin)
-        && shortText(data.platelets)
-        && shortText(data.hct)
-        && shortText(data.pt)
-        && shortText(data.inr)
-        && shortText(data.aptt);
+        && (!completed || (data.dvtLocations.size() > 0 && data.dvtSide.size() > 0))
+        && shortText(data.bun, completed)
+        && shortText(data.creatinine, completed)
+        && shortText(data.egfr, completed)
+        && shortText(data.calcium, completed)
+        && shortText(data.sodium, completed)
+        && shortText(data.potassium, completed)
+        && shortText(data.totalBilirubin, completed)
+        && shortText(data.directBilirubin, completed)
+        && shortText(data.ast, completed)
+        && shortText(data.alt, completed)
+        && shortText(data.totalProtein, completed)
+        && shortText(data.albumin, completed)
+        && shortText(data.wbc, completed)
+        && shortText(data.hemoglobin, completed)
+        && shortText(data.platelets, completed)
+        && shortText(data.hct, completed)
+        && shortText(data.pt, completed)
+        && shortText(data.inr, completed)
+        && shortText(data.aptt, completed);
     }
     function investigationsComplete(data) {
       return data.dvtLocations.size() > 0 && data.dvtSide.size() > 0
@@ -170,8 +173,11 @@ service cloud.firestore {
         && after.diff(before).affectedKeys().hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
         && after.updatedAt == request.time
         && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublicValues(after.publicValues))
-        && validInvestigations(after.investigations)
-        && after.status == (investigationsComplete(after.investigations) ? 'completed' : 'pending_completion');
+        && (after.status == 'completed'
+          ? validInvestigations(after.investigations, true)
+          : after.status == 'pending_completion'
+            && validInvestigations(after.investigations, false)
+            && !investigationsComplete(after.investigations));
     }
     function recentAdmin() {
       return admin() && request.auth.token.firebase.sign_in_provider == 'password'

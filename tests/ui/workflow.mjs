@@ -1,3 +1,4 @@
+import { checkAdmin } from "./admin.mjs";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -165,6 +166,10 @@ try {
     window.print = () => {
       state.prints++;
     };
+    async function persist(id, draft, full) {
+      state.saved = { id, draft, full };
+      subject.investigations = { bun: draft.bun };
+    }
     function Harness() {
       const [record, setRecord] = React.useState(null),
         [ack, setAck] = React.useState(false),
@@ -418,10 +423,7 @@ try {
           subject,
           onBack: () => {},
           onCompleted: () => setGeneration((v) => v + 1),
-          saveRecord: async (id, draft, full) => {
-            state.saved = { id, draft, full };
-            subject.investigations = { bun: draft.bun };
-          },
+          saveRecord: persist,
         }),
         React.createElement(
           "button",
@@ -545,6 +547,7 @@ try {
   console.log(
     "PASS all 70 fields stress print with synthetic data; duration total included; no allocation performed",
   );
+  await checkAdmin(browser, origin);
 } finally {
   await browser?.close();
   vite.kill("SIGTERM");

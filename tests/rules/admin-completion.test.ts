@@ -155,6 +155,18 @@ test("admin completion rejects incomplete, extra or invalid Section 4 data", asy
   const { bun: _bun, ...missingBun } = complete;
   await assertFails(completeWith(admin, missingBun as typeof complete));
   await assertFails(
+    completeWith(admin, { ...complete, bun: 42 } as unknown as typeof complete),
+  );
+  await assertFails(
+    completeWith(admin, { ...complete, bun: [] } as unknown as typeof complete),
+  );
+  await assertFails(
+    completeWith(admin, {
+      ...complete,
+      bun: null,
+    } as unknown as typeof complete),
+  );
+  await assertFails(
     completeWith(admin, { ...complete, dvtSide: ["Sağ", "Bilinmeyen"] }),
   );
   await assertFails(

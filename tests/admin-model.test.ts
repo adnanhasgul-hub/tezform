@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createEmptyCrf } from "../src/components/crf/sections.ts";
+import {
+  createEmptyCrf,
+  publicSections,
+} from "../src/components/crf/sections.ts";
 import {
   investigationValues,
   investigationSection,
@@ -83,11 +86,38 @@ test("Rules Section 4 schema matches canonical metadata without drifting", async
     new URL("../firestore.rules", import.meta.url),
     "utf8",
   );
-  const body = rules.split("function validInvestigations(data)")[1]!;
+  const body = rules.split("function validInvestigations(data, completed)")[1]!;
   const list = /data\.keys\(\)\.hasAll\(\[([^\]]+)\]\)/.exec(body)![1]!;
   const ids = [...list.matchAll(/'([^']+)'/g)].map((match) => match[1]);
   assert.deepEqual(
     ids.sort(),
     investigationSection.fields.map((field) => field.id).sort(),
+  );
+});
+
+test("compact full-edit validator reads every canonical public key", async () => {
+  const { readFileSync } = await import("node:fs");
+  const rules = readFileSync(
+    new URL("../firestore.rules", import.meta.url),
+    "utf8",
+  );
+  const body = rules
+    .split("function validPublicValues(data)")[1]!
+    .split("function validSubject")[0]!;
+  const names = [
+    ...new Set(
+      [...body.matchAll(/data\.([a-zA-Z0-9_]+)/g)]
+        .map((match) => match[1])
+        .filter((name) => name !== "keys"),
+    ),
+  ].sort();
+  assert.deepEqual(
+    names,
+    [
+      ...publicSections.flatMap((section) =>
+        section.fields.map((field) => field.id),
+      ),
+      "treatmentDurationTotalMonths",
+    ].sort(),
   );
 });
