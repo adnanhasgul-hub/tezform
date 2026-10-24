@@ -73,7 +73,45 @@ class AtomicMemoryStore implements RegistrationStore {
   }
 }
 
-const values = () => preparePublicValues(createNewCrf(new Date(2026, 9, 24)));
+function createCompletePublicDraft() {
+  const draft = createNewCrf(new Date(2026, 9, 24));
+  for (const field of publicSections.flatMap((section) => section.fields)) {
+    if (
+      field.readOnly ||
+      field.when ||
+      field.id === "bleedingOnsetInterval" ||
+      field.id === "researchNotes"
+    )
+      continue;
+    if (field.kind === "multiselect") {
+      draft[field.id] = [
+        field.options.find((option) => option === "Hiçbiri") ??
+          field.options.find((option) => option === "Hayır") ??
+          field.options[0]!,
+      ];
+    } else if (field.kind === "radio" || field.kind === "select") {
+      draft[field.id] =
+        field.options.find((option) => option === "Hayır") ??
+        field.options.find((option) => option === "Kanama olmadı / Uygulanamaz") ??
+        field.options[0]!;
+    } else if (field.kind === "date") {
+      draft[field.id] = "2026-10-24";
+    } else if (field.kind === "time") {
+      draft[field.id] = "12:30";
+    } else if (field.kind === "number") {
+      draft[field.id] = "1";
+    } else {
+      draft[field.id] = "TEST";
+    }
+  }
+  draft.weight = "80";
+  draft.height = "180";
+  draft.treatmentDurationYears = "3";
+  draft.treatmentDurationMonths = "4";
+  return draft;
+}
+
+const values = () => preparePublicValues(createCompletePublicDraft());
 
 test("AHT numbering starts at zero and expands beyond three digits without truncating", () => {
   for (const [number, expected] of [
@@ -168,7 +206,7 @@ test("a removed subject never releases its code and a receipt retry does not rec
 });
 
 test("write payload keeps all public and conditional answers, numeric calculations, and excludes admin data", () => {
-  const draft = createNewCrf();
+  const draft = createCompletePublicDraft();
   draft.nationalId = "UI-DEMO";
   draft.weight = "80";
   draft.height = "180";
@@ -199,7 +237,7 @@ test("write payload keeps all public and conditional answers, numeric calculatio
 });
 
 test("invalid input and malformed receipt reject rather than inventing a code or success", async () => {
-  const draft = createNewCrf();
+  const draft = createCompletePublicDraft();
   draft.treatmentDurationMonths = "12";
   assert.throws(() => preparePublicValues(draft));
   const store = new AtomicMemoryStore();
