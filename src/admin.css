@@ -45,7 +45,8 @@
 }
 
 .admin-stat-card,
-.admin-records {
+.admin-records,
+.admin-completion {
   background: #fff;
   border: 1px solid #dce1ed;
   border-radius: 14px;
@@ -75,7 +76,8 @@
   padding: 20px;
 }
 
-.admin-records-heading {
+.admin-records-heading,
+.admin-completion-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -83,13 +85,16 @@
   margin-bottom: 18px;
 }
 
-.admin-records-heading h2 {
+.admin-records-heading h2,
+.admin-completion-heading h2 {
   margin: 4px 0 0;
   font-size: 24px;
   color: #172b47;
+  white-space: pre-line;
 }
 
-.admin-records-heading .eyebrow {
+.admin-records-heading .eyebrow,
+.admin-completion-heading .eyebrow {
   margin: 0;
 }
 
@@ -211,13 +216,59 @@
   font-size: 12px;
 }
 
+.admin-completion {
+  padding: 22px;
+}
+
+.admin-completion-note {
+  margin: -4px 0 20px;
+  padding: 12px 14px;
+  border-left: 4px solid #895bb5;
+  border-radius: 8px;
+  background: #f8f5fb;
+  color: #4f5e73;
+  line-height: 1.5;
+}
+
+.admin-completion fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.admin-investigation-grid {
+  margin-top: 0;
+}
+
+.admin-completion-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e6ee;
+}
+
+.admin-success {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #b8dec9;
+  border-radius: 8px;
+  background: #edf8f2;
+  color: #17643b;
+  font-weight: 700;
+}
+
 @media (max-width: 760px) {
   .admin-shell {
     padding: 0 14px 28px;
   }
 
   .admin-topbar,
-  .admin-records-heading {
+  .admin-records-heading,
+  .admin-completion-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -231,7 +282,17 @@
     grid-template-columns: 1fr;
   }
 
-  .admin-records {
+  .admin-records,
+  .admin-completion {
     padding: 14px;
+  }
+
+  .admin-completion-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .admin-completion-actions .button {
+    width: 100%;
   }
 }

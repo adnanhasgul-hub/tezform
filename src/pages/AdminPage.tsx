@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminInvestigationForm } from "../components/AdminInvestigationForm";
 import {
   AdminLoginError,
   loginAdmin,
@@ -38,6 +39,8 @@ export function AdminPage() {
   const [subjectsError, setSubjectsError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [selectedSubject, setSelectedSubject] =
+    useState<AdminSubjectSummary | null>(null);
 
   useEffect(() => observeAdminSession(setSession), []);
 
@@ -57,7 +60,10 @@ export function AdminPage() {
 
   useEffect(() => {
     if (session.status === "authorized") void refreshSubjects();
-    else setSubjects([]);
+    else {
+      setSubjects([]);
+      setSelectedSubject(null);
+    }
   }, [session.status, refreshSubjects]);
 
   const counts = useMemo(
@@ -145,128 +151,138 @@ export function AdminPage() {
         </header>
 
         <main className="admin-dashboard">
-          <section className="admin-stats" aria-label="Kayıt özeti">
-            <article className="admin-stat-card">
-              <span>Toplam Hasta</span>
-              <strong>{counts.total}</strong>
-            </article>
-            <article className="admin-stat-card">
-              <span>Tamamlanmayı Bekleyen</span>
-              <strong>{counts.pending}</strong>
-            </article>
-            <article className="admin-stat-card">
-              <span>Tamamlanan</span>
-              <strong>{counts.completed}</strong>
-            </article>
-          </section>
+          {selectedSubject ? (
+            <AdminInvestigationForm
+              key={selectedSubject.id}
+              subject={selectedSubject}
+              onBack={() => setSelectedSubject(null)}
+              onCompleted={refreshSubjects}
+            />
+          ) : (
+            <>
+              <section className="admin-stats" aria-label="Kayıt özeti">
+                <article className="admin-stat-card">
+                  <span>Toplam Hasta</span>
+                  <strong>{counts.total}</strong>
+                </article>
+                <article className="admin-stat-card">
+                  <span>Tamamlanmayı Bekleyen</span>
+                  <strong>{counts.pending}</strong>
+                </article>
+                <article className="admin-stat-card">
+                  <span>Tamamlanan</span>
+                  <strong>{counts.completed}</strong>
+                </article>
+              </section>
 
-          <section className="admin-records" aria-labelledby="records-title">
-            <div className="admin-records-heading">
-              <div>
-                <p className="eyebrow">ARAŞTIRMA KAYITLARI</p>
-                <h2 id="records-title">Hasta Kayıtları</h2>
-              </div>
-              <button
-                type="button"
-                className="button secondary"
-                disabled={loadingSubjects}
-                onClick={() => void refreshSubjects()}
-              >
-                {loadingSubjects ? "Yükleniyor…" : "Listeyi Yenile"}
-              </button>
-            </div>
+              <section className="admin-records" aria-labelledby="records-title">
+                <div className="admin-records-heading">
+                  <div>
+                    <p className="eyebrow">ARAŞTIRMA KAYITLARI</p>
+                    <h2 id="records-title">Hasta Kayıtları</h2>
+                  </div>
+                  <button
+                    type="button"
+                    className="button secondary"
+                    disabled={loadingSubjects}
+                    onClick={() => void refreshSubjects()}
+                  >
+                    {loadingSubjects ? "Yükleniyor…" : "Listeyi Yenile"}
+                  </button>
+                </div>
 
-            <div className="admin-filters">
-              <label>
-                <span>Hasta kodu ile ara</span>
-                <input
-                  type="search"
-                  placeholder="Örn. AHT-001 veya 001"
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Durum</span>
-                <select
-                  value={statusFilter}
-                  onChange={(event) =>
-                    setStatusFilter(event.target.value as StatusFilter)
-                  }
-                >
-                  <option value="all">Tümü</option>
-                  <option value="pending_completion">
-                    Tamamlanmayı Bekleyen
-                  </option>
-                  <option value="completed">Tamamlanan</option>
-                </select>
-              </label>
-            </div>
+                <div className="admin-filters">
+                  <label>
+                    <span>Hasta kodu ile ara</span>
+                    <input
+                      type="search"
+                      placeholder="Örn. AHT-001 veya 001"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Durum</span>
+                    <select
+                      value={statusFilter}
+                      onChange={(event) =>
+                        setStatusFilter(event.target.value as StatusFilter)
+                      }
+                    >
+                      <option value="all">Tümü</option>
+                      <option value="pending_completion">
+                        Tamamlanmayı Bekleyen
+                      </option>
+                      <option value="completed">Tamamlanan</option>
+                    </select>
+                  </label>
+                </div>
 
-            {subjectsError && (
-              <p className="field-error" role="alert">
-                {subjectsError}
-              </p>
-            )}
+                {subjectsError && (
+                  <p className="field-error" role="alert">
+                    {subjectsError}
+                  </p>
+                )}
 
-            <div className="admin-table-wrap">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Hasta Kodu</th>
-                    <th scope="col">Kayıt Tarihi</th>
-                    <th scope="col">Durum</th>
-                    <th scope="col">İşlem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredSubjects.map((subject) => (
-                    <tr key={subject.id}>
-                      <td>
-                        <strong className="admin-subject-code">
-                          {subject.subjectCode}
-                        </strong>
-                      </td>
-                      <td>{formatDate(subject.createdAt)}</td>
-                      <td>
-                        <span
-                          className={`admin-status admin-status-${subject.status}`}
-                        >
-                          {statusLabel(subject.status)}
-                        </span>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="button secondary admin-action-button"
-                          disabled
-                          title="Bölüm 4 tamamlama ekranı bir sonraki adımda etkinleştirilecek."
-                        >
-                          {subject.status === "completed"
-                            ? "Görüntüle"
-                            : "Formu Tamamla"}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                  {!loadingSubjects && filteredSubjects.length === 0 && (
-                    <tr>
-                      <td className="admin-empty" colSpan={4}>
-                        {subjects.length === 0
-                          ? "Henüz hasta kaydı bulunmuyor."
-                          : "Arama ve filtreye uygun kayıt bulunamadı."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <p className="admin-list-note">
-              Bu ekran yalnızca yetkili yönetici oturumunda Firestore'daki hasta
-              kayıtlarını okur. Bölüm 4 düzenleme ve tamamlama işlemi bir sonraki
-              adımda etkinleştirilecektir.
-            </p>
-          </section>
+                <div className="admin-table-wrap">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">Hasta Kodu</th>
+                        <th scope="col">Kayıt Tarihi</th>
+                        <th scope="col">Durum</th>
+                        <th scope="col">İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSubjects.map((subject) => (
+                        <tr key={subject.id}>
+                          <td>
+                            <strong className="admin-subject-code">
+                              {subject.subjectCode}
+                            </strong>
+                          </td>
+                          <td>{formatDate(subject.createdAt)}</td>
+                          <td>
+                            <span
+                              className={`admin-status admin-status-${subject.status}`}
+                            >
+                              {statusLabel(subject.status)}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="button secondary admin-action-button"
+                              onClick={() => setSelectedSubject(subject)}
+                            >
+                              {subject.status === "completed"
+                                ? "Görüntüle"
+                                : "Formu Tamamla"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {!loadingSubjects && filteredSubjects.length === 0 && (
+                        <tr>
+                          <td className="admin-empty" colSpan={4}>
+                            {subjects.length === 0
+                              ? "Henüz hasta kaydı bulunmuyor."
+                              : "Arama ve filtreye uygun kayıt bulunamadı."}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="admin-list-note">
+                  “Formu Tamamla” yalnızca Bölüm 4 radyoloji ve laboratuvar
+                  alanlarını kaydeder. Hasta tarafından girilen Bölüm 1, 2, 3,
+                  5, 6 ve 7 verileri bu işlemde değiştirilmez.
+                </p>
+              </section>
+            </>
+          )}
         </main>
       </div>
     );
