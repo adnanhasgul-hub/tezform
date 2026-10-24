@@ -1,16 +1,18 @@
 import { Fragment, useEffect, useRef, useState } from "react";
-import type { CrfValue, CrfValues, FieldId } from "../../types/crf";
+import type { CrfValue, CrfDraftValues, FieldId } from "../../types/crf";
+import { BloodNotice } from "./BloodNotice";
 import { FormField } from "./FormField";
 import {
-  createEmptyCrf,
+  createNewCrf,
   investigationsNotice,
   isFieldVisible,
   publicSections,
 } from "./sections";
+import { describeTreatmentDuration, recalculateDerived } from "./calculations";
 import { validatePublicCrf, validateSection } from "./validation";
 
 export function CrfForm() {
-  const [values, setValues] = useState<CrfValues>(createEmptyCrf);
+  const [values, setValues] = useState<CrfDraftValues>(createNewCrf);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
   const [touched, setTouched] = useState<ReadonlySet<FieldId>>(() => new Set());
@@ -44,7 +46,7 @@ export function CrfForm() {
     setFocusRequest(fieldId ? { fieldId } : null);
   }
   function updateField(id: FieldId, value: CrfValue) {
-    setValues((previous) => ({ ...previous, [id]: value }));
+    setValues((previous) => recalculateDerived({ ...previous, [id]: value }));
     setValidated(false);
   }
   function next() {
@@ -66,59 +68,81 @@ export function CrfForm() {
     }
     setValidated(true);
   }
+  function renderField(field: (typeof active.fields)[number]) {
+    return (
+      <FormField
+        field={field}
+        value={values[field.id]}
+        error={
+          showAllErrors || attempted.has(active.id) || touched.has(field.id)
+            ? errors[field.id]
+            : undefined
+        }
+        onBlur={() => setTouched((previous) => new Set(previous).add(field.id))}
+        onChange={(value) => updateField(field.id, value)}
+      />
+    );
+  }
+  const durationDescription = describeTreatmentDuration(
+    values.treatmentDurationYears,
+    values.treatmentDurationMonths,
+  );
   return (
     <section className="crf-container" aria-labelledby="crf-title">
       <div className="form-intro">
-        <p className="eyebrow">VERİ TOPLAMA FORMU · 6 ADIM</p>
-        <h2 id="crf-title">Olgu rapor formu</h2>
+        <div>
+          <p className="eyebrow">VERİ TOPLAMA FORMU</p>
+          <h2 id="crf-title">Olgu rapor formu</h2>
+        </div>
+        <span className="step-counter">
+          Adım {activeIndex + 1} / {publicSections.length}
+        </span>
+      </div>
+      <details className="workflow-notes">
+        <summary>Form hakkında</summary>
         <p>
           Cevaplar yalnızca sayfa belleğinde tutulur; sayfa yenilendiğinde
-          silinir. Bölümler arasında düğmelerle geçiş yapabilirsiniz.
+          silinir. Otomatik bölüm geçişi kapalıdır; boş cevaplar bir seçenek
+          olarak yorumlanmaz.
         </p>
-      </div>
-      <p className="admin-section-notice">
-        <strong>Bölüm 4:</strong> {investigationsNotice}
-      </p>
-      <div className="crf-progress">
-        <strong>
-          Adım {activeIndex + 1} / {publicSections.length}
-        </strong>
-        <p className="format-note">
-          Kaynak CRF zorunlu alan belirtmez. Otomatik bölüm geçişi kapalıdır;
-          boş cevaplar bir seçenek olarak yorumlanmaz.
+        <p>
+          <strong>Bölüm 4:</strong> {investigationsNotice}
         </p>
+      </details>
+      <div className="wizard-toolbar">
+        <BloodNotice />
+        <nav aria-label="Form bölümleri" className="stepper">
+          <ol>
+            {publicSections.map((section, index) => {
+              const hasErrors =
+                Object.keys(validateSection(section, values)).length > 0 &&
+                (showAllErrors || attempted.has(section.id));
+              const status = hasErrors
+                ? "Biçim hatası"
+                : visited.has(section.id)
+                  ? "Ziyaret edildi"
+                  : "Henüz görüntülenmedi";
+              return (
+                <li key={section.id}>
+                  <button
+                    type="button"
+                    className={`step-button${hasErrors ? " has-errors" : ""}`}
+                    aria-label={`Bölüm ${section.number}: ${section.title}. ${index === activeIndex ? "Aktif. " : ""}${status}`}
+                    aria-current={index === activeIndex ? "step" : undefined}
+                    onClick={() => navigate(index)}
+                  >
+                    <span className="step-number">{section.number}</span>
+                    <span className="step-copy">
+                      <strong>{section.shortTitle}</strong>
+                      <small>{index === activeIndex ? "Aktif" : status}</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
       </div>
-      <nav aria-label="Form bölümleri" className="stepper">
-        <ol>
-          {publicSections.map((section, index) => {
-            const hasErrors =
-              Object.keys(validateSection(section, values)).length > 0 &&
-              (showAllErrors || attempted.has(section.id));
-            const status = hasErrors
-              ? "Biçim hatası"
-              : visited.has(section.id)
-                ? "Ziyaret edildi"
-                : "Henüz görüntülenmedi";
-            return (
-              <li key={section.id}>
-                <button
-                  type="button"
-                  className={`step-button${hasErrors ? " has-errors" : ""}`}
-                  aria-label={`Bölüm ${section.number}: ${section.title}. ${index === activeIndex ? "Aktif. " : ""}${status}`}
-                  aria-current={index === activeIndex ? "step" : undefined}
-                  onClick={() => navigate(index)}
-                >
-                  <span className="step-number">{section.number}</span>
-                  <span className="step-copy">
-                    <strong>{section.shortTitle}</strong>
-                    <small>{index === activeIndex ? "Aktif" : status}</small>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
       <form
         ref={formRef}
         autoComplete="off"
@@ -145,33 +169,71 @@ export function CrfForm() {
               {active.title}
             </h3>
           </div>
-          <div className="field-grid">
+          <div className={`field-grid section-grid-${active.number}`}>
             {active.fields
-              .filter((field) => isFieldVisible(field, values))
-              .map((field) => (
-                <Fragment key={field.id}>
-                  {field.group && (
-                    <h4 className="clinical-group-heading full-width">
-                      {field.group}
-                    </h4>
-                  )}
-                  <FormField
-                    field={field}
-                    value={values[field.id]}
-                    error={
-                      showAllErrors ||
-                      attempted.has(active.id) ||
-                      touched.has(field.id)
-                        ? errors[field.id]
-                        : undefined
-                    }
-                    onBlur={() =>
-                      setTouched((previous) => new Set(previous).add(field.id))
-                    }
-                    onChange={(value) => updateField(field.id, value)}
-                  />
-                </Fragment>
-              ))}
+              .filter(
+                (field) =>
+                  !field.when && field.id !== "treatmentDurationMonths",
+              )
+              .map((field) => {
+                if (field.id === "treatmentDurationYears") {
+                  const monthsField = active.fields.find(
+                    (item) => item.id === "treatmentDurationMonths",
+                  )!;
+                  return (
+                    <div key={field.id} className="question-card duration-card">
+                      <h4 className="clinical-group-heading">{field.group}</h4>
+                      <div className="duration-inputs">
+                        {renderField(field)}
+                        {renderField(monthsField)}
+                      </div>
+                      <output
+                        className="duration-result"
+                        aria-live="polite"
+                        aria-label="Tedavi süresi sonucu"
+                      >
+                        <strong>{durationDescription || "—"}</strong>
+                        {values.treatmentDurationTotalMonths !== null && (
+                          <span>
+                            Toplam {values.treatmentDurationTotalMonths} ay
+                          </span>
+                        )}
+                      </output>
+                    </div>
+                  );
+                }
+                const children = active.fields.filter(
+                  (item) =>
+                    item.when?.fieldId === field.id &&
+                    isFieldVisible(item, values),
+                );
+                const wide =
+                  (field.kind === "radio" || field.kind === "multiselect") &&
+                  field.options.some((option) => option.length > 60);
+                return (
+                  <Fragment key={field.id}>
+                    {field.group && (
+                      <h4 className="clinical-group-heading full-width">
+                        {field.group}
+                      </h4>
+                    )}
+                    <div
+                      className={`question-block${wide ? " full-width" : ""}`}
+                    >
+                      <div className="question-card">
+                        {renderField(field)}
+                        {children.length > 0 && (
+                          <div className="conditional-details">
+                            {children.map((child) => (
+                              <div key={child.id}>{renderField(child)}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              })}
           </div>
         </section>
         <div className="wizard-actions">

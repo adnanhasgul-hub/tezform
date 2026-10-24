@@ -1,7 +1,7 @@
 export type EligibilityAnswer = "" | "yes" | "no";
 
 export type PublicFieldId =
-  | "participantCode"
+  | "nationalId"
   | "protocolDate"
   | "sex"
   | "age"
@@ -12,7 +12,8 @@ export type PublicFieldId =
   | "indicationOther"
   | "dailyDose"
   | "dailyDoseOther"
-  | "treatmentStart"
+  | "treatmentDurationYears"
+  | "treatmentDurationMonths"
   | "adherence"
   | "lastDoseTime"
   | "otherAntithrombotic"
@@ -49,7 +50,6 @@ export type PublicFieldId =
   | "bleedingDayDose"
   | "researchNotes"
   | "investigatorName"
-  | "signatureStamp"
   | "assessmentDate";
 
 export type InvestigationFieldId =
@@ -84,13 +84,31 @@ export type MultiFieldId =
 
 export type FieldId = PublicFieldId | InvestigationFieldId;
 export type CrfValues = {
-  [K in FieldId]: K extends MultiFieldId ? string[] : string;
+  [K in FieldId]: K extends MultiFieldId
+    ? string[]
+    : K extends "bmi" | "treatmentDurationYears" | "treatmentDurationMonths"
+      ? number | null
+      : string;
+} & { treatmentDurationTotalMonths: number | null };
+export type CrfDraftValues = Omit<
+  CrfValues,
+  "treatmentDurationYears" | "treatmentDurationMonths"
+> & {
+  treatmentDurationYears: string;
+  treatmentDurationMonths: string;
+  treatmentDurationTotalMonths: number | null;
 };
-export type CrfValue = CrfValues[FieldId];
+export type CrfValue = CrfDraftValues[FieldId];
 interface BaseField {
   id: FieldId;
   label: string;
   required: boolean;
+  readOnly?: boolean;
+  defaultValue?: string;
+  inputMode?: "numeric";
+  min?: number;
+  max?: number;
+  integer?: boolean;
   hint?: string;
   group?: string;
   prefix?: string;
@@ -103,7 +121,7 @@ export type CrfField = BaseField &
     | { id: MultiFieldId; kind: "multiselect"; options: readonly string[] }
     | ({ id: Exclude<FieldId, MultiFieldId> } & (
         | { kind: "text" | "date" | "time" | "textarea" | "number" }
-        | { kind: "radio"; options: readonly string[] }
+        | { kind: "radio" | "select"; options: readonly string[] }
       ))
   );
 export interface CrfSection {
@@ -116,7 +134,10 @@ export interface CrfSection {
 }
 export type DigitalCrfContext = "digital-public" | "admin-completion";
 export type CrfContext = DigitalCrfContext | "print";
-export type PublicCrfValues = Pick<CrfValues, PublicFieldId>;
+export type PublicCrfValues = Pick<
+  CrfValues,
+  PublicFieldId | "treatmentDurationTotalMonths"
+>;
 export type InvestigationValues = Pick<CrfValues, InvestigationFieldId>;
 export type CrfRecordStatus = "pending_completion" | "completed";
 // Model for future implementation only; this application does not save records.

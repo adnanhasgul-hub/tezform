@@ -1,9 +1,11 @@
 import type {
   CrfContext,
   CrfSection,
-  CrfValues,
+  CrfDraftValues,
   DigitalCrfContext,
 } from "../../types/crf";
+
+import { getLocalCalendarDate, recalculateDerived } from "./calculations.ts";
 
 // Clinical text transcribed from the supplied source; Section 1 laboratory block intentionally excluded.
 export const formCopy = {
@@ -22,8 +24,9 @@ export const crfSections: readonly CrfSection[] = [
     entryRole: "public",
     fields: [
       {
-        id: "participantCode",
-        label: "Hasta Protokol / ID No:",
+        id: "nationalId",
+        label: "Hasta TC Kimlik No:",
+        inputMode: "numeric",
         kind: "text",
         required: false,
       },
@@ -64,6 +67,7 @@ export const crfSections: readonly CrfSection[] = [
       },
       {
         id: "bmi",
+        readOnly: true,
         label: "VKİ:",
         kind: "number",
         required: false,
@@ -71,6 +75,8 @@ export const crfSections: readonly CrfSection[] = [
       },
       {
         id: "indication",
+        defaultValue:
+          "Derin Ven Trombozu (DVT) veya Akciğer Embolisi (PE) tedavisi / önlenmesi",
         label: "Apixaban Kullanım Endikasyonu:",
         kind: "radio",
         required: false,
@@ -118,9 +124,21 @@ export const crfSections: readonly CrfSection[] = [
         },
       },
       {
-        id: "treatmentStart",
-        label: "Tedaviye Başlama (Tarih / Ay):",
-        kind: "text",
+        id: "treatmentDurationYears",
+        group: "Ne Kadar Süredir Apixaban Kullanıyor?",
+        label: "Yıl",
+        kind: "number",
+        min: 0,
+        integer: true,
+        required: false,
+      },
+      {
+        id: "treatmentDurationMonths",
+        label: "Ay",
+        kind: "number",
+        min: 0,
+        max: 11,
+        integer: true,
         required: false,
       },
       {
@@ -638,13 +656,15 @@ export const crfSections: readonly CrfSection[] = [
       {
         id: "investigatorName",
         label: "Değerlendiren Araştırmacı Hekim:",
-        kind: "text",
-        required: false,
-      },
-      {
-        id: "signatureStamp",
-        label: "İmza / Kaşe:",
-        kind: "text",
+        kind: "select",
+        options: [
+          "Dr. Mehmet",
+          "Dr. Yasin",
+          "Dr. Tuncay",
+          "Dr. Burak",
+          "Dr. Adnan",
+          "Dr. Rabia",
+        ],
         required: false,
       },
       {
@@ -658,14 +678,26 @@ export const crfSections: readonly CrfSection[] = [
   },
 ];
 
-export function createEmptyCrf(): CrfValues {
-  const values: Partial<CrfValues> = {};
+export function createEmptyCrf(): CrfDraftValues {
+  const values: Partial<CrfDraftValues> = {
+    bmi: null,
+    treatmentDurationTotalMonths: null,
+  };
   for (const section of crfSections)
     for (const field of section.fields) {
       if (field.kind === "multiselect") values[field.id] = [];
-      else values[field.id] = "";
+      else if (field.id !== "bmi") values[field.id] = "";
     }
-  return values as CrfValues;
+  return values as CrfDraftValues;
+}
+
+export function createNewCrf(now = new Date()): CrfDraftValues {
+  const values = createEmptyCrf();
+  values.protocolDate = getLocalCalendarDate(now);
+  values.indication = crfSections[0]!.fields.find(
+    (field) => field.id === "indication",
+  )!.defaultValue!;
+  return recalculateDerived(values);
 }
 
 export const investigationsNotice =
@@ -688,7 +720,7 @@ export const publicSections = getEditableSections("digital-public");
 
 export function isFieldVisible(
   field: CrfSection["fields"][number],
-  values: CrfValues,
+  values: CrfDraftValues,
 ): boolean {
   if (!field.when) return true;
   const answer = values[field.when.fieldId];

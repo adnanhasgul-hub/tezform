@@ -1,0 +1,215 @@
+ADNAN TEZ FORMU
+Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme
+Veri Toplama Formu (CRF)
+* ÖNEMLİ KLİNİK UYARI: HASTADAN MOR TÜP (EDTA) KAN ALINACAKTIR *
+
+BÖLÜM 1: Hasta Demografik ve Temel Klinik Bilgileri
+Hasta Protokol / ID No:
+Tarih:
+Cinsiyet:
+Kadın
+Erkek
+(*Kadın cinsiyette pik plazma konsantrasyonu önemlidir)
+Yaş:
+Vücut Ağırlığı:
+kg
+Boy:
+cm
+VKİ:
+kg/m²
+Apixaban Kullanım Endikasyonu:
+Atriyal Fibrilasyon (AF) (İnme / sistemik emboli önlenmesi)
+Derin Ven Trombozu (DVT) veya Akciğer Embolisi (PE) tedavisi / önlenmesi
+Ortopedik cerrahi sonrası tromboz koruması
+Diğer:
+
+BÖLÜM 2: Apixaban Kullanım ve Uyum Detayları
+Günlük Apixaban Dozu:
+Günde 2 kez 2.5 mg
+Günde 2 kez 5 mg
+Diğer:
+Tedaviye Başlama (Tarih / Ay):
+İlaç Uyumu / Sadakati:
+Her gün zamanında
+Haftada 1-2 doz unutuyor
+Sık sık doz atlıyor
+Son Apixaban Dozunu Saat Kaçta Aldınız?:
+Saat:
+(Kan alma ve plazma konsantrasyon düzeyi tayini için gereklidir)
+
+BÖLÜM 3: Eşzamanlı İlaç Kullanımı ve Etkileşim Taraması (CYP3A4 / P-gp)
+Düzenli Başka Kan Sulandırıcı / Pıhtı Önleyici:
+Hayır
+Aspirin
+Klopidogrel / Tikagrelor
+Heparin
+Ağrı Kesici / Romatizma İlacı (NSAİİ):
+Hayır
+Evet ->
+Düzenli
+Seyrek
+Güçlü/Orta CYP3A4 ve P-gp İnhibitörleri
+(Konsantrasyonu Artıranlar - Son 1 Ay):
+Amiodaron
+Verapamil
+Diltiazem
+Ketokonazol / Itrakonazol
+Klaritromisin
+Hiçbiri
+Güçlü Enzim İndükleyicileri
+(Konsantrasyonu Düşürenler - Son 1 Ay):
+Rifampisin
+Karbamazepin
+Fenitoin
+Sarı Kantaron (St. John's Wort)
+Hiçbiri
+
+BÖLÜM 4: Radyoloji Bulguları ve Detaylı Laboratuvar Parametreleri
+(Formu Tamamla)
+1. Radyoloji Bulguları (DVT Seviyesi):
+İliak
+Femoral
+Popliteal
+Üst Ekstremite
+IVC
+SVC
+Juguler
+2. DVT Tarafı:
+Sağ
+Sol
+3. Detaylı Laboratuvar Parametreleri
+(19 Parametre Taraması):
+BUN:
+mg/dL
+Kreatinin:
+mg/dL
+eGFR:
+mL/dk
+Kalsiyum:
+mg/dL
+Sodyum:
+mEq/L
+Potasyum:
+mEq/L
+Total Bilirubin:
+mg/dL
+Direk Bil.:
+mg/dL
+AST:
+U/L
+ALT:
+U/L
+Total Protein:
+g/dL
+Albumin:
+g/dL
+WBC:
+K/uL
+HGB:
+g/dL
+PLT:
+K/uL
+HCT:
+%
+PT:
+sn
+PT INR:
+aPTT:
+sn
+
+BÖLÜM 5: Organ Sistemlerine Göre Kanama Belirtilerinin Taraması (ISTH)
+A. Cilt ve Yüzeyel / Mukoza Kanamaları (Minor)
+1. Sebepsiz veya kolayca morarma / mor lekeler (Ekimoz)
+Hayır
+Evet ->
+Küçük <2 cm
+Geniş >5 cm
+2. Diş fırçalarken veya kendiliğinden diş eti kanaması
+Hayır
+Evet ->
+<5 dakika
+>5 dakika / Zor duruyor
+3. Burun kanaması (Epistaksis)
+Hayır
+Evet ->
+Sıklık:
+Ayda 1-2
+Haftalık
+Süre:
+<10 dk
+>10 dk
+4. Küçük kesiklerde veya tıraşta uzun süren kanama
+Hayır
+Evet
+B. Gastrointestinal Sistem Kanamaları
+(GİS - Major / CRNMB Şüphesi)
+5. Dışkının katran gibi siyahlaşması (Melena)
+Hayır
+Evet (Gastrointestinal kanama şüphesi)
+6. Dışkıda veya tuvalette taze kırmızı kan (Hematokezya)
+Hayır
+Evet
+7. Kusma ile kan veya kahve telvesi benzeri parçacıklar (Hematemez)
+Hayır
+Evet
+C. Urogenital Sistem Kanamaları
+8. İdrarda pembe, kırmızı veya çay rengi değişme (Hematüri)
+Hayır
+Evet
+9. (Kadın Hastalar) Adet kanamasında aşırı artış (Menoraji)
+Hayır
+Evet
+Menopozda / Uygulanamaz
+D. Santral Sinir Sistemi / Nörolojik Belirtiler
+(Major Kanama Şüphesi)
+10. Aniden başlayan en şiddetli baş ağrısı
+Hayır
+Evet (Acil intrakraniyal kanama şüphesi)
+11. Ani baş dönmesi, görme/konuşma güçlüğü veya uyuşma
+Hayır
+Evet
+E. Kas, Eklem ve Derin Doku Kanamaları
+12. Darbe almadan eklemde ani şişlik ve ağrı (Hemartroz)
+Hayır
+Evet
+13. Öksürükle kan veya kanlı balgam gelmesi (Hemoptizi)
+Hayır
+Evet
+14. Göz içinde kan oturması (Subkonjonktival kanama)
+Hayır
+Evet
+
+BÖLÜM 6: Kanama Şiddeti ve Klinik Sonuçlarının Derecelendirilmesi
+1. Sağlık Kuruluşuna Başvuru:
+Hayır
+Evet ->
+Poliklinik
+Acil
+Yatış
+2. Kan Transfüzyonu:
+Hayır
+Evet ->
+Miktar:
+ünite
+3. Apixaban Tedavisine Ara Verilmesi / Kesilmesi:
+Hayır
+Evet ->
+Ara Süresi:
+gün
+4. Hemoglobin Düşüşü (>2 g/dL):
+Hayır
+Evet
+Bilinmiyor
+
+BÖLÜM 7: Zamansal İlişki ve Araştırmacı Hekim Onay Alanı
+1. İlk Kanama Belirtisi Apixaban Başlandıktan Ne Kadar Süre Sonra Çıktı?:
+Cevap:
+2. Kanama Günü Doz Durumu:
+Zamanında tam doz aldım
+Çift doz almıştım
+İlaçtan hemen sonra kanadı
+Kanama olmadı / Uygulanamaz
+Araştırmacı Hekim Notu / Klinik Gözlem:
+Değerlendiren Araştırmacı Hekim:
+İmza / Kaşe:
+Tarih:

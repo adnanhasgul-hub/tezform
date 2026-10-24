@@ -33,7 +33,11 @@ test("every clinical heading, question, option, explanatory text and unit matche
       if (item.group) transcript.push(item.group);
       if (item.label) transcript.push(item.label);
       if (item.prefix) transcript.push(item.prefix);
-      if (item.kind === "radio" || item.kind === "multiselect")
+      if (
+        item.kind === "radio" ||
+        item.kind === "multiselect" ||
+        item.kind === "select"
+      )
         transcript.push(...item.options);
       if (item.unit) transcript.push(item.unit);
       if (item.hint) transcript.push(item.hint);
@@ -49,7 +53,7 @@ test("every clinical heading, question, option, explanatory text and unit matche
 test("all source answers have unique fields and the sole Section 1 laboratory exception is respected", () => {
   assert.deepEqual(
     crfSections.map((section) => section.fields.length),
-    [9, 5, 5, 21, 18, 7, 6],
+    [9, 6, 5, 21, 18, 7, 5],
   );
   assert.equal(fields.length, 71);
   assert.equal(new Set(fields.map((item) => item.id)).size, 71);
@@ -158,4 +162,29 @@ test("format checks do not impose clinical ranges, rounding or text truncation",
   assert(validateField(field("assessmentDate"), "2025-02-29"));
   assert.equal(validateField(field("lastDoseTime"), "23:59"), undefined);
   assert(validateField(field("lastDoseTime"), "24:00"));
+});
+
+test("unapproved clinical sections and Section 7 questions exactly retain the 0435e3f source content", () => {
+  const baseline = readFileSync(
+    new URL("./fixtures/source-crf-0435e3f.txt", import.meta.url),
+    "utf8",
+  );
+  const revised = readFileSync(
+    new URL("./fixtures/source-crf.txt", import.meta.url),
+    "utf8",
+  );
+  function getSection(text: string, sectionNumber: number) {
+    return text.split(`BÖLÜM ${sectionNumber}:`)[1]!.split(/BÖLÜM \d+:/)[0]!;
+  }
+  for (const number of [3, 4, 5, 6])
+    assert.equal(
+      normalize(getSection(revised, number)),
+      normalize(getSection(baseline, number)),
+    );
+  const old7 = getSection(baseline, 7).replace("İmza / Kaşe:", "");
+  const new7 = getSection(revised, 7).replace(
+    /Dr\. (Mehmet|Yasin|Tuncay|Burak|Adnan|Rabia)\n/g,
+    "",
+  );
+  assert.equal(normalize(new7), normalize(old7));
 });

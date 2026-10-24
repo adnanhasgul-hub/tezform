@@ -971,3 +971,478 @@ progress::-moz-progress-bar {
     outline: none !important;
   }
 }
+
+/* Compact clinical workspace; paper styling stays independent. */
+@media screen {
+  :root {
+    background: #f4f5fa;
+  }
+  .app-shell {
+    max-width: 1500px;
+    padding: 0 32px;
+  }
+  main {
+    max-width: 1320px;
+  }
+  .topbar {
+    min-height: 68px;
+    border-bottom-color: #dee2ed;
+  }
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .topbar-actions .button {
+    padding: 8px 14px;
+    min-height: 38px;
+  }
+  .admin-button {
+    margin-left: 0;
+  }
+  .intro {
+    padding: 34px 0 24px;
+  }
+  .blood-notice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: #f0e7fb;
+  }
+  .blood-notice h2 {
+    font-size: 18px;
+  }
+  .tube {
+    margin: 0;
+    flex-shrink: 0;
+  }
+  .eligibility-review {
+    margin: 16px 0;
+  }
+  .eligibility-review > summary {
+    font-size: 13px;
+    font-weight: 650;
+    color: #5b477e;
+    cursor: pointer;
+    padding: 5px 0;
+  }
+  .eligibility-card {
+    margin-top: 8px;
+    box-shadow: 0 4px 18px #24335405;
+  }
+  .form-active .topbar {
+    min-height: 54px;
+  }
+  .form-active .intro {
+    display: none;
+  }
+  .form-active .blood-notice {
+    margin-top: 12px;
+    padding: 9px 14px;
+  }
+  .form-active .blood-notice h2 {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .form-active .tube {
+    width: 24px;
+    height: 24px;
+    font-size: 17px;
+  }
+  .form-active .eligibility-review {
+    margin: 5px 0;
+  }
+  .crf-container {
+    margin-top: 14px;
+  }
+  .form-intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .form-intro > div {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .form-intro .eyebrow {
+    margin: 0;
+    font-size: 10px;
+  }
+  .form-intro h2 {
+    font-size: 21px;
+    margin: 0;
+  }
+  .step-counter {
+    background: #e9e1f3;
+    color: #563080;
+    font-size: 12px;
+    font-weight: 750;
+    padding: 5px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .workflow-notes {
+    font-size: 12px;
+    color: #56647b;
+    margin: 6px 0;
+  }
+  .workflow-notes summary {
+    cursor: pointer;
+    width: fit-content;
+  }
+  .workflow-notes p {
+    margin: 6px 0;
+    max-width: 880px;
+  }
+  .stepper {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #f4f5fa;
+    padding: 6px 0;
+    margin-bottom: 8px;
+  }
+  .stepper ol {
+    gap: 8px;
+  }
+  .step-button {
+    padding: 7px 10px;
+    gap: 9px;
+    border-color: #d7dce8;
+    background: #ffffffbd;
+    min-height: 42px;
+  }
+  .step-button[aria-current="step"] {
+    padding: 6px 9px;
+    background: #f0e6fb;
+    border-color: #7445a6;
+  }
+  .step-button[aria-current="step"] .step-number {
+    background: #7445a6;
+    color: white;
+  }
+  .step-copy strong {
+    font-size: 12px;
+  }
+  .step-copy small {
+    font-size: 10px;
+  }
+  .form-section {
+    padding: 18px;
+    border: 1px solid #dce1ed;
+    border-radius: 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 18px #24335404;
+  }
+  .section-heading {
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+  .section-heading h3 {
+    font-size: 19px;
+  }
+  .section-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  #active-section-title {
+    scroll-margin-top: 70px;
+  }
+  .field-grid {
+    gap: 12px;
+    align-items: start;
+  }
+  .question-card {
+    background: #fafbfe;
+    border: 1px solid #e1e5ef;
+    border-radius: 10px;
+    padding: 12px;
+    min-width: 0;
+  }
+  .question-card:focus-within {
+    border-color: #ad91c9;
+    box-shadow: 0 0 0 2px #e9dff4;
+  }
+  .question-block {
+    min-width: 0;
+  }
+  .form-field label,
+  .form-field legend {
+    font-size: 14px;
+    color: #2b3b53;
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    min-height: 40px;
+    border-color: #c9d1e0;
+    border-radius: 7px;
+    padding: 8px 10px;
+  }
+  .form-field input[readonly] {
+    background: #ede9f5;
+    border-style: dashed;
+    color: #563080;
+    font-weight: 750;
+  }
+  .form-field input:focus-visible,
+  .form-field select:focus-visible,
+  .form-field textarea:focus-visible {
+    outline: 2px solid #895bb5;
+    outline-offset: 2px;
+  }
+  .multi-choice-options {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .multi-choice-options label {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 400;
+    border: 1px solid #d5dce8;
+    border-radius: 7px;
+    padding: 7px 10px;
+    margin: 0;
+    background: white;
+    cursor: pointer;
+  }
+  .multi-choice-options label:hover {
+    border-color: #ab8bc7;
+    background: #faf6ff;
+  }
+  .multi-choice-options label:has(input:checked) {
+    background: #eee3fa;
+    border-color: #8052ac;
+    color: #50267b;
+    box-shadow: inset 0 0 0 1px #8052ac;
+  }
+  .multi-choice-options label:focus-within {
+    outline: 2px solid #895bb5;
+    outline-offset: 2px;
+  }
+  .multi-choice-options input {
+    width: 17px;
+    height: 17px;
+    min-height: 17px;
+    margin: 2px 0 0;
+    padding: 0;
+  }
+  .long-options {
+    display: flex;
+    flex-direction: column;
+  }
+  .long-options label {
+    width: 100%;
+  }
+  .conditional-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed #d7c5e8;
+  }
+  .conditional-field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .clinical-group-heading {
+    margin: 6px 0 2px;
+    font-size: 16px;
+    padding-bottom: 8px;
+    color: #503375;
+    border-bottom: 1px solid #dce0ec;
+  }
+  .duration-card .clinical-group-heading {
+    margin: 0 0 10px;
+    font-size: 14px;
+    padding-bottom: 8px;
+    color: #2b3b53;
+  }
+  .duration-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .duration-result {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 6px;
+    color: #58377e;
+    font-size: 13px;
+    background: #efe9f7;
+    padding: 8px 10px;
+    border-radius: 7px;
+    margin-top: 10px;
+    min-height: 36px;
+  }
+  .duration-result span {
+    color: #5e5870;
+  }
+  .field-error {
+    background: #fff0f1;
+    color: #9d2034;
+    border-radius: 6px;
+    padding: 7px 9px;
+    font-size: 13px;
+  }
+  .wizard-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    padding: 10px 0;
+    background: #f4f5faf5;
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #e1e5ee;
+  }
+  .wizard-actions .button {
+    min-height: 42px;
+  }
+  .form-end {
+    margin-top: 6px;
+    padding: 9px;
+    font-size: 12px;
+  }
+  .privacy-note {
+    margin: 14px auto 20px;
+  }
+  footer {
+    padding: 16px 0;
+  }
+}
+@media screen and (min-width: 1100px) {
+  .section-grid-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .section-grid-1 .question-block:last-child {
+    grid-column: span 2;
+  }
+  .section-grid-1 .question-block:last-child .multi-choice-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .section-grid-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media screen and (max-width: 760px) {
+  .app-shell {
+    padding: 0 14px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 0;
+  }
+  .topbar > span:nth-child(2) {
+    font-size: 12px;
+    letter-spacing: 0.03em;
+  }
+  .topbar-actions {
+    gap: 6px;
+  }
+  .topbar-actions .button {
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+  .intro {
+    padding: 24px 0 18px;
+  }
+  .blood-notice {
+    padding: 12px;
+    gap: 10px;
+  }
+  .blood-notice h2 {
+    font-size: 15px;
+  }
+  .form-active .blood-notice h2 {
+    font-size: 13px;
+  }
+  .form-intro > div {
+    display: block;
+  }
+  .form-intro .eyebrow {
+    margin-bottom: 3px;
+  }
+  .form-intro h2 {
+    font-size: 19px;
+  }
+  .stepper ol {
+    justify-content: space-between;
+    padding: 2px;
+    gap: 4px;
+  }
+  .step-button {
+    width: 40px;
+    min-height: 40px;
+    padding: 6px;
+  }
+  .step-button[aria-current="step"] {
+    padding: 5px;
+  }
+  .step-copy {
+    display: none;
+  }
+  .form-section {
+    padding: 12px;
+  }
+  .section-heading h3 {
+    font-size: 18px;
+  }
+  .question-card {
+    padding: 12px;
+  }
+  .field-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .conditional-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .multi-choice-options label {
+    flex: 1 1 auto;
+  }
+  .long-options label {
+    flex: 0 1 auto;
+  }
+  .wizard-actions .button {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+}
+@media screen {
+  .wizard-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    background: #f4f5fa;
+    padding-top: 4px;
+  }
+  .wizard-toolbar .stepper {
+    position: static;
+    margin-bottom: 8px;
+    background: transparent;
+  }
+  .form-active .wizard-toolbar .blood-notice {
+    margin-top: 0;
+  }
+  #active-section-title {
+    scroll-margin-top: 140px;
+  }
+}

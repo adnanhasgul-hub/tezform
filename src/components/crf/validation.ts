@@ -2,9 +2,10 @@ import type {
   CrfField,
   CrfSection,
   CrfValue,
-  CrfValues,
+  CrfDraftValues,
   FieldId,
 } from "../../types/crf.ts";
+import { parseDurationPart } from "./calculations.ts";
 import { isFieldVisible, publicSections } from "./sections.ts";
 
 export type CrfErrors = Partial<Record<FieldId, string>>;
@@ -15,6 +16,11 @@ export function validateField(
   field: CrfField,
   value: CrfValue,
 ): string | undefined {
+  if (field.readOnly)
+    return value === null ||
+      (typeof value === "number" && Number.isFinite(value))
+      ? undefined
+      : "Geçerli bir değer girin.";
   if (field.kind === "multiselect") {
     if (
       !Array.isArray(value) ||
@@ -26,10 +32,23 @@ export function validateField(
   }
   if (typeof value !== "string") return "Geçerli bir değer girin.";
   if (!value.trim()) return undefined;
-  if (field.kind === "radio" && !field.options.includes(value))
+  if (
+    (field.kind === "radio" || field.kind === "select") &&
+    !field.options.includes(value)
+  )
     return "Listeden geçerli bir seçenek seçin.";
-  if (field.kind === "number" && !Number.isFinite(Number(value)))
-    return "Geçerli bir sayı girin.";
+  if (field.kind === "number") {
+    if (!Number.isFinite(Number(value))) return "Geçerli bir sayı girin.";
+    if (field.integer && parseDurationPart(value, field.max) === null)
+      return field.max === 11
+        ? "Ay değeri 0-11 arasında bir tam sayı olmalıdır."
+        : "Yıl değeri negatif olmayan bir tam sayı olmalıdır.";
+    if (
+      field.id === "treatmentDurationYears" &&
+      !Number.isSafeInteger(Number(value) * 12)
+    )
+      return "Hesaplanabilir bir yıl değeri girin.";
+  }
   if (field.kind === "time" && !/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
     return "Geçerli bir saat girin.";
   if (field.kind === "date") {
@@ -53,7 +72,7 @@ export function validateField(
 }
 export function validateSection(
   section: CrfSection,
-  values: CrfValues,
+  values: CrfDraftValues,
 ): CrfErrors {
   const errors: CrfErrors = {};
   for (const field of section.fields) {
@@ -63,7 +82,7 @@ export function validateSection(
   }
   return errors;
 }
-export function validatePublicCrf(values: CrfValues): CrfErrors {
+export function validatePublicCrf(values: CrfDraftValues): CrfErrors {
   return Object.assign(
     {},
     ...publicSections.map((section) => validateSection(section, values)),

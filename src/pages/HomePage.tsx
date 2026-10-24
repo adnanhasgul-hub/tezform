@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { AdminPlaceholder } from "../components/AdminPlaceholder";
 import { PrintCrf } from "../components/crf/PrintCrf";
 import { formCopy } from "../components/crf/sections";
+import { BloodNotice } from "../components/crf/BloodNotice";
 import { CrfForm } from "../components/crf/CrfForm";
 import type { EligibilityAnswer } from "../types/crf";
 
@@ -19,35 +20,18 @@ export function HomePage() {
 
   return (
     <>
-      <div className="app-shell" hidden={printOpen}>
+      <div
+        className={`app-shell${formOpen ? " form-active" : ""}`}
+        hidden={printOpen}
+      >
         <header className="topbar">
           <span className="brand-mark" aria-hidden="true">
             +
           </span>
           <span>
-            TEZFORM <small>KLİNİK ARAŞTIRMA</small>
+            {formCopy.title} <small>KLİNİK ARAŞTIRMA</small>
           </span>
-          <button
-            type="button"
-            className="button secondary admin-button"
-            onClick={() => setAdminOpen(true)}
-          >
-            Yönetici Paneli
-          </button>
-        </header>
-        <main>
-          <section className="intro" aria-labelledby="page-title">
-            <p className="eyebrow">ELEKTRONİK OLGU RAPOR FORMU</p>
-            <h1 id="page-title">{formCopy.title}</h1>
-            <p className="subtitle clinical-copy">{formCopy.subtitle}</p>
-          </section>
-          <section className="blood-notice" aria-labelledby="blood-title">
-            <span className="tube" aria-hidden="true">
-              !
-            </span>
-            <h2 id="blood-title">{formCopy.warning}</h2>
-          </section>
-          <div className="print-launch">
+          <div className="topbar-actions">
             <button
               ref={printButtonRef}
               type="button"
@@ -56,75 +40,92 @@ export function HomePage() {
             >
               Form Yazdır
             </button>
-            <span>Kağıt üzerinde doldurmak için boş CRF</span>
+            <button
+              type="button"
+              className="button secondary admin-button"
+              onClick={() => setAdminOpen(true)}
+            >
+              Yönetici Paneli
+            </button>
           </div>
-          <section
-            className="eligibility-card"
-            aria-labelledby="eligibility-title"
-          >
-            <p className="eyebrow">BAŞLAMADAN ÖNCE · UYGUNLUK KONTROLÜ</p>
-            <fieldset>
-              <legend id="eligibility-title">
-                Hasta eş zamanlı antiagregan kullanıyor mu?
-              </legend>
-              <div className="eligibility-options">
-                <label
-                  className={`choice${eligibility === "yes" ? " selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="antiaggregant"
-                    value="yes"
-                    checked={eligibility === "yes"}
-                    onChange={() => changeEligibility("yes")}
-                    aria-describedby="eligibility-note"
-                  />
-                  Evet
-                </label>
-                <label
-                  className={`choice${eligibility === "no" ? " selected" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="antiaggregant"
-                    value="no"
-                    checked={eligibility === "no"}
-                    onChange={() => changeEligibility("no")}
-                    aria-describedby="eligibility-note"
-                  />
-                  Hayır
-                </label>
-              </div>
-            </fieldset>
-            <div aria-live="polite" aria-atomic="true">
-              {eligibility === "yes" && (
-                <p className="ineligible-message">
-                  Hasta çalışma için uygun değil.
-                </p>
-              )}
-              {eligibility === "no" && (
-                <p className="eligible-message">
-                  Formu açarak arayüzü inceleyebilirsiniz.
-                </p>
-              )}
-            </div>
-            <div className="eligibility-actions">
-              <button
-                className="button primary"
-                type="button"
-                disabled={eligibility !== "no"}
-                aria-expanded={formOpen}
-                onClick={() => setFormOpen(true)}
-              >
-                Formu Doldur <span aria-hidden="true">→</span>
-              </button>
-              <p id="eligibility-note">
-                {eligibility
-                  ? "Uygunluk yanıtını değiştirmek açık formu kapatır ve alanları temizler."
-                  : "Devam etmek için uygunluk sorusunu yanıtlayın."}
-              </p>
-            </div>
+        </header>
+        <main>
+          <section className="intro" aria-labelledby="page-title">
+            <p className="eyebrow">ELEKTRONİK OLGU RAPOR FORMU</p>
+            <h1 id="page-title">{formCopy.title}</h1>
+            <p className="subtitle clinical-copy">{formCopy.subtitle}</p>
           </section>
+          {!formOpen && <BloodNotice />}
+          <details className="eligibility-review" open={!formOpen}>
+            <summary>Uygunluk kontrolü</summary>
+            <section
+              className="eligibility-card"
+              aria-labelledby="eligibility-title"
+            >
+              <p className="eyebrow">BAŞLAMADAN ÖNCE · UYGUNLUK KONTROLÜ</p>
+              <fieldset>
+                <legend id="eligibility-title">
+                  Hasta eş zamanlı antiagregan kullanıyor mu?
+                </legend>
+                <div className="eligibility-options">
+                  <label
+                    className={`choice${eligibility === "yes" ? " selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="antiaggregant"
+                      value="yes"
+                      checked={eligibility === "yes"}
+                      onChange={() => changeEligibility("yes")}
+                      aria-describedby="eligibility-note"
+                    />
+                    Evet
+                  </label>
+                  <label
+                    className={`choice${eligibility === "no" ? " selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="antiaggregant"
+                      value="no"
+                      checked={eligibility === "no"}
+                      onChange={() => changeEligibility("no")}
+                      aria-describedby="eligibility-note"
+                    />
+                    Hayır
+                  </label>
+                </div>
+              </fieldset>
+              <div aria-live="polite" aria-atomic="true">
+                {eligibility === "yes" && (
+                  <p className="ineligible-message">
+                    Hasta çalışma için uygun değil.
+                  </p>
+                )}
+                {eligibility === "no" && (
+                  <p className="eligible-message">
+                    Formu açarak arayüzü inceleyebilirsiniz.
+                  </p>
+                )}
+              </div>
+              <div className="eligibility-actions">
+                <button
+                  className="button primary"
+                  type="button"
+                  disabled={eligibility !== "no"}
+                  aria-expanded={formOpen}
+                  onClick={() => setFormOpen(true)}
+                >
+                  Formu Doldur <span aria-hidden="true">→</span>
+                </button>
+                <p id="eligibility-note">
+                  {eligibility
+                    ? "Uygunluk yanıtını değiştirmek açık formu kapatır ve alanları temizler."
+                    : "Devam etmek için uygunluk sorusunu yanıtlayın."}
+                </p>
+              </div>
+            </section>
+          </details>
           {formOpen && eligibility === "no" && <CrfForm />}
           <p className="privacy-note">
             Geliştirme sürümü · Gerçek hasta verisi girmeyin. Bu aşamada kayıt,

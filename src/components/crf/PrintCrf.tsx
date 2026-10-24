@@ -12,7 +12,9 @@ function PrintField({ field }: { field: CrfField }) {
         <p className="print-field-label clinical-copy">{field.label}</p>
       )}
       {field.prefix && <p className="field-prefix">{field.prefix}</p>}
-      {field.kind === "radio" || field.kind === "multiselect" ? (
+      {field.kind === "radio" ||
+      field.kind === "multiselect" ||
+      field.kind === "select" ? (
         <div className="print-options">
           {field.options.map((option) => (
             <span key={option}>

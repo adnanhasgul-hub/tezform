@@ -34,11 +34,12 @@ export function FormField({ field, value, onChange, onBlur, error }: Props) {
 
   if (field.kind === "multiselect" || field.kind === "radio") {
     const selected = Array.isArray(value) ? value : [];
+    const longOptions = field.options.some((option) => option.length > 45);
     return (
       <fieldset
         id={id}
         tabIndex={-1}
-        className={`${className} multi-choice-field full-width`}
+        className={`${className} multi-choice-field`}
         aria-label={field.label ? undefined : label}
         aria-describedby={description}
         aria-invalid={error ? true : undefined}
@@ -47,7 +48,9 @@ export function FormField({ field, value, onChange, onBlur, error }: Props) {
         {field.label && (
           <legend className="clinical-copy">{field.label}</legend>
         )}
-        <div className="multi-choice-options">
+        <div
+          className={`multi-choice-options${longOptions ? " long-options" : ""}`}
+        >
           {field.options.map((option, index) => (
             <label key={option} htmlFor={`${id}-${index}`}>
               <input
@@ -82,13 +85,20 @@ export function FormField({ field, value, onChange, onBlur, error }: Props) {
   const common = {
     id,
     name: field.id,
-    value: typeof value === "string" ? value : "",
+    value:
+      typeof value === "number"
+        ? value.toFixed(1)
+        : typeof value === "string"
+          ? value
+          : "",
     onBlur,
     "aria-label": field.label ? undefined : label,
     "aria-describedby": description,
     "aria-invalid": error ? true : undefined,
     onChange: (
-      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+      event: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
     ) => onChange(event.target.value),
   };
   return (
@@ -104,11 +114,31 @@ export function FormField({ field, value, onChange, onBlur, error }: Props) {
       <div className="input-with-unit">
         {field.kind === "textarea" ? (
           <textarea {...common} rows={3} />
+        ) : field.kind === "select" ? (
+          <select {...common}>
+            <option value="">Seçiniz</option>
+            {field.options.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         ) : (
           <input
             {...common}
-            type={field.kind}
-            step={field.kind === "number" ? "any" : undefined}
+            type={field.readOnly ? "text" : field.kind}
+            readOnly={field.readOnly}
+            inputMode={field.inputMode}
+            autoComplete={field.id === "nationalId" ? "off" : undefined}
+            min={field.min}
+            max={field.max}
+            step={
+              field.kind === "number"
+                ? field.integer
+                  ? "1"
+                  : "any"
+                : undefined
+            }
           />
         )}
         {field.unit && <span className="field-unit">{field.unit}</span>}

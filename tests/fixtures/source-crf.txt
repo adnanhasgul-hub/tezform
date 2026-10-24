@@ -4,7 +4,7 @@ Veri Toplama Formu (CRF)
 * ÖNEMLİ KLİNİK UYARI: HASTADAN MOR TÜP (EDTA) KAN ALINACAKTIR *
 
 BÖLÜM 1: Hasta Demografik ve Temel Klinik Bilgileri
-Hasta Protokol / ID No:
+Hasta TC Kimlik No:
 Tarih:
 Cinsiyet:
 Kadın
@@ -28,7 +28,9 @@ Günlük Apixaban Dozu:
 Günde 2 kez 2.5 mg
 Günde 2 kez 5 mg
 Diğer:
-Tedaviye Başlama (Tarih / Ay):
+Ne Kadar Süredir Apixaban Kullanıyor?
+Yıl
+Ay
 İlaç Uyumu / Sadakati:
 Her gün zamanında
 Haftada 1-2 doz unutuyor
@@ -211,5 +213,10 @@ Zamanında tam doz aldım
 Kanama olmadı / Uygulanamaz
 Araştırmacı Hekim Notu / Klinik Gözlem:
 Değerlendiren Araştırmacı Hekim:
-İmza / Kaşe:
+Dr. Mehmet
+Dr. Yasin
+Dr. Tuncay
+Dr. Burak
+Dr. Adnan
+Dr. Rabia
 Tarih:
