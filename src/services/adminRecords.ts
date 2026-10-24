@@ -20,7 +20,7 @@ import {
 import { db } from "../firebase/client";
 import type {
   CrfRecordStatus,
-  InvestigationValues,
+  StoredInvestigationValues,
   PublicCrfValues,
 } from "../types/crf";
 
@@ -32,7 +32,7 @@ export interface AdminSubjectSummary {
   createdAt: Date | null;
   updatedAt: Date | null;
   publicValues: PublicCrfValues;
-  investigations: Partial<InvestigationValues>;
+  investigations: StoredInvestigationValues;
 }
 
 function timestampToDate(value: unknown): Date | null {
@@ -55,9 +55,9 @@ function parsePublicValues(value: unknown): PublicCrfValues {
   return value as PublicCrfValues;
 }
 
-function parseInvestigations(value: unknown): Partial<InvestigationValues> {
+function parseInvestigations(value: unknown): StoredInvestigationValues {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Partial<InvestigationValues>;
+  return value as StoredInvestigationValues;
 }
 
 function parseSubject(

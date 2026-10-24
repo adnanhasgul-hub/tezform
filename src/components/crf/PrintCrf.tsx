@@ -2,7 +2,12 @@ import { createPortal } from "react-dom";
 import { getTreatmentDuration } from "./calculations";
 import { useEffect, useRef } from "react";
 import type { CrfField, CrfDraftValues } from "../../types/crf";
-import { crfSections, formCopy, getFieldAccessibleLabel } from "./sections";
+import {
+  crfSections,
+  formCopy,
+  getFieldAccessibleLabel,
+  getFieldForDisplay,
+} from "./sections";
 
 const FORM_TITLE =
   "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu";
@@ -147,16 +152,28 @@ export function PrintCrf({
             <h2 id={`print-section-${section.id}`} className="clinical-copy">
               BÖLÜM {section.number}: {section.title}
             </h2>
-            {section.fields.map((field) => (
-              <div key={field.id} className="print-field-block">
-                {field.group && (
-                  <h3 className="print-group-heading clinical-copy">
-                    {field.group}
-                  </h3>
-                )}
-                <PrintField field={field} values={values} />
-              </div>
-            ))}
+            {section.number === 4 && values?.legacyDvtLocations?.length ? (
+              <p className="print-field-hint">
+                Eski veri yapısı: her iki taraf için ortak DVT lokalizasyonları:{" "}
+                {values.legacyDvtLocations.join(", ")}. Sağ ve Sol dağılımı
+                henüz doğrulanmamıştır.
+              </p>
+            ) : null}
+            {section.fields.flatMap((source) => {
+              const field = getFieldForDisplay(source, values, "print");
+              return !field
+                ? []
+                : [
+                    <div key={field.id} className="print-field-block">
+                      {field.group && (
+                        <h3 className="print-group-heading clinical-copy">
+                          {field.group}
+                        </h3>
+                      )}
+                      <PrintField field={field} values={values} />
+                    </div>,
+                  ];
+            })}
           </section>
         ))}
       </div>

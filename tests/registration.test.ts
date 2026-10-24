@@ -217,7 +217,7 @@ test("write payload keeps all public and conditional answers, numeric calculatio
   draft.epistaxis = "Evet ->";
   draft.epistaxisFrequency = "Haftalık";
   draft.epistaxisDuration = ">10 dk";
-  draft.dvtLocations = ["İliak"];
+  draft.dvtRightLocations = ["İliak"];
   draft.hemoglobin = "13";
   draft.otherAntithrombotic = ["Heparin"];
   const prepared = preparePublicValues(draft);
@@ -227,7 +227,8 @@ test("write payload keeps all public and conditional answers, numeric calculatio
   assert.equal(prepared.treatmentDurationTotalMonths, 40);
   assert.equal(prepared.epistaxisFrequency, "Haftalık");
   assert.equal(prepared.epistaxisDuration, ">10 dk");
-  assert(!("dvtLocations" in prepared));
+  assert(!("dvtRightLocations" in prepared));
+  assert(!("dvtLeftLocations" in prepared));
   assert(!("hemoglobin" in prepared));
   assert(!("assessmentDate" in prepared));
   assert.equal(

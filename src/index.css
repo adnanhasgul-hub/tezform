@@ -1542,14 +1542,14 @@ progress::-moz-progress-bar {
     margin: 0 0 2pt;
   }
   .print-section[data-print-section="4"]
-    .print-field-block:nth-of-type(n + 3)
+    .print-field-block:has(.paper-value)
     .print-field {
     display: flex;
     align-items: center;
     gap: 3pt;
   }
   .print-section[data-print-section="4"]
-    .print-field-block:nth-of-type(n + 3)
+    .print-field-block:has(.paper-value)
     .print-field-label {
     min-width: 58pt;
     margin: 0;

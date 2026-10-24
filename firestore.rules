@@ -114,17 +114,28 @@ service cloud.firestore {
       return value.size() <= 32 && (completed
         ? value.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*') : value is string);
     }
+    function validDvtLocations(locations) {
+      return locations is list
+        && locations.toSet().size() == locations.size()
+        && locations.hasOnly(['İliak', 'Femoral', 'Popliteal', 'Üst Ekstremite', 'IVC', 'SVC', 'Juguler']);
+    }
+    function completeDvt(data) {
+      return data.dvtSide.size() > 0
+        && (!data.dvtSide.hasAny(['Sağ']) || data.dvtRightLocations.size() > 0)
+        && (!data.dvtSide.hasAny(['Sol']) || data.dvtLeftLocations.size() > 0);
+    }
     function validInvestigations(data, completed) {
       return data is map
-        && data.keys().hasAll(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
-        && data.keys().size() == 21
-        && data.dvtLocations is list
-        && data.dvtLocations.toSet().size() == data.dvtLocations.size()
-        && data.dvtLocations.hasOnly(['İliak', 'Femoral', 'Popliteal', 'Üst Ekstremite', 'IVC', 'SVC', 'Juguler'])
+        && data.keys().hasAll(['dvtSide', 'dvtRightLocations', 'dvtLeftLocations', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
+        && data.keys().size() == 22
+        && validDvtLocations(data.dvtRightLocations)
+        && validDvtLocations(data.dvtLeftLocations)
         && data.dvtSide is list
         && data.dvtSide.toSet().size() == data.dvtSide.size()
         && data.dvtSide.hasOnly(['Sağ', 'Sol'])
-        && (!completed || (data.dvtLocations.size() > 0 && data.dvtSide.size() > 0))
+        && (data.dvtSide.hasAny(['Sağ']) || data.dvtRightLocations.size() == 0)
+        && (data.dvtSide.hasAny(['Sol']) || data.dvtLeftLocations.size() == 0)
+        && (!completed || completeDvt(data))
         && shortText(data.bun, completed)
         && shortText(data.creatinine, completed)
         && shortText(data.egfr, completed)
@@ -146,7 +157,7 @@ service cloud.firestore {
         && shortText(data.aptt, completed);
     }
     function investigationsComplete(data) {
-      return data.dvtLocations.size() > 0 && data.dvtSide.size() > 0
+      return completeDvt(data)
         && data.bun.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
         && data.creatinine.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')
         && data.egfr.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*')

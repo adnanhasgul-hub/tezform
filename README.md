@@ -27,7 +27,7 @@ Bu cloud ortamında cache dizini yazılamıyorsa npm komutlarına `--cache /work
 
 `src/components/crf/sections.ts` tek runtime klinik metadata kaynağıdır. Kaynak metin, seçenekler ve koşullu alt cevaplar dijital, gelecekteki admin ve print için ortaktır. Önceki kullanıcı onayları (TC Kimlik No, yerel tarih, otomatik/read-only VKİ, DVT/PE varsayılanı, yıl/ay tedavi süresi ve hekim listesi) korunur. Bölüm 1 laboratuvar bloğu ve imza/kaşe yoktur. Bu turdaki tek yeni klinik değişiklik **Bölüm 7 Tarih alanının kaldırılmasıdır**. Formun tek klinik tarihi Bölüm 1 `protocolDate`'tir; yeni formda yerel bugün seçilir ve düzenlenebilir.
 
-70 metadata alanı vardır: **49 public + 21 Bölüm 4**. Ayrıca modelde türetilmiş `treatmentDurationTotalMonths` vardır. VKİ `bmi` sayısaldır; yıl/ay/toplam ay sayısal modele çevrilir. `3 yıl 4 ay = 40 ay`. Koşullu cevaplar ayrı alanlardır ve kayıtta kaybolmaz. `tests/fixtures/source-crf.txt` güncel onaylı metin referansıdır; `source-crf-0435e3f.txt` geçmiş klinik referansı korur. Testler izin verilen değişiklikler dışında içeriği karşılaştırır.
+71 metadata alanı vardır: **49 public + 22 Bölüm 4**. Ayrıca modelde türetilmiş `treatmentDurationTotalMonths` vardır. VKİ `bmi` sayısaldır; yıl/ay/toplam ay sayısal modele çevrilir. `3 yıl 4 ay = 40 ay`. Koşullu cevaplar ayrı alanlardır ve kayıtta kaybolmaz. `tests/fixtures/source-crf.txt` güncel onaylı metin referansıdır; `source-crf-0435e3f.txt` geçmiş klinik referansı korur. Testler izin verilen değişiklikler dışında içeriği karşılaştırır.
 
 Public adımlar: **1 → 2 → 3 → 5 → 6 → 7**. Aynı anda bir bölüm görünür. Kaynak zorunluluk belirtmediğinden alanlar keyfi olarak zorunlu yapılmaz; girilmiş, uygulanabilir cevapların biçimi kontrol edilir. Bölüm 4 yalnızca bilgilendirmedir; public validation/kayıt verisine dahil edilmez. Sonraki aşamada admin tarafından tamamlanacaktır.
 
@@ -137,7 +137,7 @@ Mevcut production ortamında Auth sağlayıcıları, admin ve counter kurulmuşt
 
 ## Yönetici kayıt yönetimi ve kalıcı AHT tahsisi
 
-Bölüm 4 UI durumu merkezi 21 alanın gerçek değerlerinden hesaplanır: `Boş` (kırmızı), `Devam Et` (turuncu), `Tamamlandı` (yeşil). String trim sonrası boşsa, multiselect boşsa doldurulmuş sayılmaz. Persistence için `status`, yalnız tüm alanlar doluysa `completed`, diğer durumlarda `pending_completion` kalır; eski status tek başına UI durumu belirlemez. Kısmi kayıt ve Kaydet ve Listeye Dön desteklenir.
+Bölüm 4 UI durumu merkezi uygulanabilir alanların gerçek değerlerinden hesaplanır: `Boş` (kırmızı), `Devam Et` (turuncu), `Tamamlandı` (yeşil). String trim sonrası boşsa, multiselect boşsa doldurulmuş sayılmaz. Persistence için `status`, yalnız tüm alanlar doluysa `completed`, diğer durumlarda `pending_completion` kalır; eski status tek başına UI durumu belirlemez. Kısmi kayıt ve Kaydet ve Listeye Dön desteklenir.
 
 Reusable/free-number havuzu kaldırılmıştır. Eski `systemCounters/reusableSubjects` belgesi varsa istemciler okumaz, yazmaz veya tahsiste kullanmaz; Rules erişimi kapatır. Bu belgeyi silme/migration gerekmeksizin mevcut monotonik sayaçtan devam edilir. Yeni hasta için `nextNumber = lastAllocatedNumber + 1` hesaplanır; counter + subject + receipt tek Firestore transaction içinde yazılır. Mevcut en fazla 4 denemelik bounded retry korunur. Eski havuz tabanlı istemci güvenli biçimde reddedilir; production geçişinde doğrulanmış Rules ile yeni Hosting sürümü birlikte planlanmalıdır. Counter veya hasta/receipt geçmişi değiştirilmez.
 
@@ -146,3 +146,9 @@ Admin tam düzenleme yalnız `publicValues`, `investigations`, `status`, `update
 Print component'i `document.body` altında portal olarak render edilir. Bu, print CSS'inin gizlediği `.app-shell` parent'ından bağımsızdır. Browser regression testi hem gerçek print media görünürlüğünü hem 70 alanı, AHT kodunu ve Bölüm 4 değerlerini doğrular.
 
 Deployment sırası: emulator testleri → kontrollü manuel Rules yayını → PR/merge → mevcut Hosting workflow'u. Yeni Rules production yayını doğrulanmadan admin UI Hosting'e yayınlanmaz. Production verisi üzerinde test yapılmaz.
+
+## Phase A: taraf bazlı DVT
+
+Bölüm 4, `dvtSide`, `dvtRightLocations`, `dvtLeftLocations` ve 19 laboratuvar alanından oluşur. Lokasyon seçenekleri metadata’dan gelir; yalnız seçilen taraflar dijitalde gösterilir. Tek taraf başlığı 2, bilateral başlıklar 2A/2B olur. Taraf kaldırılınca o tarafın gizli cevapları kalıcı veriden çıkarılır. Tamamlanma, seçilmiş her taraf için lokalizasyon ve mevcut laboratuvar alanlarını gerektirir; kısmi kayıt korunur.
+
+Eski tek taraflı `dvtLocations` güvenle ilgili tarafa eşlenir. Eski bilateral ortak lokalizasyonlar tahmin edilmez; yöneticiye kaynak bilgi ve uyarı gösterilir. Yeni modele kayıt öncesinde seçilmiş tarafların lokalizasyonları ayrı ayrı girilir ve açıkça doğrulanır. Eski alan yeni kayıtlara yazılmaz. Salt okunur görünüm ve print aynı adapter/metadata’yı kullanır; belirsiz eski ortak bilgi baskıda da açıkça belirtilir. Boş kağıt formunda iki tarafın da seçenekleri bulunur. AHT tahsis ve silme transaction’ları değiştirilmemiştir.

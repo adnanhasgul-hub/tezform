@@ -52,7 +52,8 @@ export type PublicFieldId =
   | "investigatorName";
 
 export type InvestigationFieldId =
-  | "dvtLocations"
+  | "dvtRightLocations"
+  | "dvtLeftLocations"
   | "dvtSide"
   | "bun"
   | "creatinine"
@@ -78,7 +79,8 @@ export type MultiFieldId =
   | "otherAntithrombotic"
   | "inhibitors"
   | "inducers"
-  | "dvtLocations"
+  | "dvtRightLocations"
+  | "dvtLeftLocations"
   | "dvtSide";
 
 export type FieldId = PublicFieldId | InvestigationFieldId;
@@ -96,6 +98,8 @@ export type CrfDraftValues = Omit<
   treatmentDurationYears: string;
   treatmentDurationMonths: string;
   treatmentDurationTotalMonths: number | null;
+  // Transient read-only information for an ambiguous legacy record; never persisted.
+  legacyDvtLocations?: string[];
 };
 export type CrfValue = CrfDraftValues[FieldId];
 interface BaseField {
@@ -138,8 +142,12 @@ export type PublicCrfValues = Pick<
   PublicFieldId | "treatmentDurationTotalMonths"
 >;
 export type InvestigationValues = Pick<CrfValues, InvestigationFieldId>;
+export type StoredInvestigationValues = Partial<InvestigationValues> & {
+  // Historical common location list, accepted on read only.
+  dvtLocations?: string[];
+};
 export type CrfRecordStatus = "pending_completion" | "completed";
-// Model for future implementation only; this application does not save records.
+// Persisted research record; allocation identity is stored separately.
 export type CrfRecord = { publicValues: PublicCrfValues } & (
   | {
       status: "pending_completion";

@@ -99,7 +99,8 @@ function pendingSubject() {
 
 function investigations() {
   return {
-    dvtLocations: ["Femoral", "Popliteal"],
+    dvtRightLocations: ["Femoral", "Popliteal"],
+    dvtLeftLocations: [] as string[],
     dvtSide: ["Sağ"],
     bun: "12",
     creatinine: "0.9",
@@ -139,7 +140,7 @@ test("authorized admin can complete a pending subject with the exact Section 4 s
   await assertSucceeds(completeWith(admin));
   const saved = (await assertSucceeds(getDoc(doc(admin, subjectPath)))).data()!;
   assert.equal(saved.status, "completed");
-  assert.deepEqual(saved.investigations.dvtLocations, ["Femoral", "Popliteal"]);
+  assert.deepEqual(saved.investigations.dvtRightLocations, ["Femoral", "Popliteal"]);
   assert.equal(saved.investigations.creatinine, "0.9");
   assert.deepEqual(saved.publicValues, publicValues());
 });
@@ -170,7 +171,7 @@ test("admin completion rejects incomplete, extra or invalid Section 4 data", asy
     completeWith(admin, { ...complete, dvtSide: ["Sağ", "Bilinmeyen"] }),
   );
   await assertFails(
-    completeWith(admin, { ...complete, dvtLocations: ["Femoral", "Femoral"] }),
+    completeWith(admin, { ...complete, dvtRightLocations: ["Femoral", "Femoral"] }),
   );
   await assertFails(
     completeWith(admin, {
@@ -260,4 +261,88 @@ test("anonymous and non-admin users cannot edit completed Section 4", async () =
       updatedAt: serverTimestamp(),
     }),
   );
+});
+
+
+test("side-specific DVT completeness accepts unilateral and independent bilateral locations; selected missing sides remain partial", async () => {
+  const admin = password("admin-user");
+  const ref = doc(admin, subjectPath);
+  for (const dvt of [
+    { dvtSide: ["Sağ"], dvtRightLocations: ["Femoral", "Popliteal"], dvtLeftLocations: [] },
+    { dvtSide: ["Sol"], dvtRightLocations: [], dvtLeftLocations: ["İliak"] },
+    { dvtSide: ["Sağ", "Sol"], dvtRightLocations: ["Femoral", "Popliteal"], dvtLeftLocations: ["İliak"] },
+  ]) {
+    await assertSucceeds(completeWith(admin, { ...investigations(), ...dvt }));
+    assert.deepEqual((await getDoc(ref)).data()!.investigations.dvtLeftLocations, dvt.dvtLeftLocations);
+  }
+  for (const dvt of [
+    { dvtSide: [], dvtRightLocations: [], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ"], dvtRightLocations: [], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ", "Sol"], dvtRightLocations: ["Femoral"], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ", "Sol"], dvtRightLocations: [], dvtLeftLocations: ["İliak"] },
+  ]) {
+    const values = { ...investigations(), ...dvt };
+    await assertFails(completeWith(admin, values));
+    await assertSucceeds(updateDoc(ref, {
+      investigations: values,
+      status: "pending_completion",
+      updatedAt: serverTimestamp(),
+    }));
+  }
+});
+
+test("inactive-side stale locations, invalid options, duplicate values and obsolete shared keys are denied", async () => {
+  const admin = password("admin-user");
+  for (const dvt of [
+    { dvtSide: [], dvtRightLocations: ["Femoral"], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ"], dvtRightLocations: ["Femoral"], dvtLeftLocations: ["İliak"] },
+    { dvtSide: ["Sol"], dvtRightLocations: ["Femoral"], dvtLeftLocations: ["İliak"] },
+    { dvtSide: ["Sağ"], dvtRightLocations: ["Unknown"], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ", "Sağ"], dvtRightLocations: ["Femoral"], dvtLeftLocations: [] },
+    { dvtSide: ["Sağ", "Sol"], dvtRightLocations: ["Femoral"], dvtLeftLocations: ["İliak", "İliak"] },
+  ]) {
+    const values = { ...investigations(), ...dvt };
+    for (const status of ["pending_completion", "completed"]) {
+      await assertFails(updateDoc(doc(admin, subjectPath), {
+        investigations: values,
+        status,
+        updatedAt: serverTimestamp(),
+      }));
+    }
+  }
+  await assertFails(completeWith(admin, {
+    ...investigations(),
+    dvtLocations: ["Femoral"],
+  } as ReturnType<typeof investigations>));
+});
+
+test("legacy unilateral and ambiguous bilateral records remain admin-readable and may be explicitly rewritten to the canonical model", async () => {
+  const admin = password("admin-user");
+  const ref = doc(admin, subjectPath);
+  for (const sides of [["Sağ"], ["Sol"], ["Sağ", "Sol"]]) {
+    const { dvtRightLocations: _right, dvtLeftLocations: _left, ...labAndSide } = investigations();
+    const legacy = { ...labAndSide, dvtSide: sides, dvtLocations: ["Popliteal"] };
+    await environment.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), subjectPath), {
+        ...pendingSubject(),
+        status: "completed",
+        investigations: legacy,
+      });
+    });
+    assert.deepEqual((await assertSucceeds(getDoc(ref))).data()!.investigations, legacy);
+    await assertFails(getDoc(doc(anonymous(), subjectPath)));
+    const rewritten = {
+      ...investigations(),
+      dvtSide: sides,
+      dvtRightLocations: sides.includes("Sağ") ? ["Femoral"] : [],
+      dvtLeftLocations: sides.includes("Sol") ? ["İliak"] : [],
+    };
+    await assertFails(completeWith(anonymous(), rewritten));
+    await assertFails(completeWith(password("not-admin"), rewritten));
+    await assertSucceeds(completeWith(admin, rewritten));
+    const saved = (await getDoc(ref)).data()!.investigations;
+    assert.deepEqual(saved, rewritten);
+    assert.equal(Object.keys(saved).length, 22);
+    assert(!("dvtLocations" in saved));
+  }
 });

@@ -13,7 +13,7 @@ import {
 import { reauthenticatedDelete } from "../src/services/adminDeletion.ts";
 test("Section 4 states use all canonical fields and real values, including whitespace and arrays", () => {
   const empty = investigationValues(createEmptyCrf());
-  assert.equal(Object.keys(empty).length, 21);
+  assert.equal(Object.keys(empty).length, 22);
   assert.equal(investigationState({}), "empty");
   assert.equal(investigationState({ ...empty, bun: "  " }), "empty");
   assert.equal(investigationState({ ...empty, bun: "0" }), "partial");
@@ -22,9 +22,10 @@ test("Section 4 states use all canonical fields and real values, including white
     if (field.kind === "multiselect") complete[field.id] = [field.options[0]!];
     else
       complete[
-        field.id as Exclude<keyof typeof complete, "dvtSide" | "dvtLocations">
+        field.id as Exclude<keyof typeof complete, "dvtSide" | "dvtRightLocations" | "dvtLeftLocations">
       ] = "1";
   }
+  complete.dvtSide = ["Sağ", "Sol"];
   assert.equal(investigationState(complete), "complete");
   assert.equal(recordStatus(complete), "completed");
   assert.equal(investigationState({ ...complete, egfr: "" }), "partial");

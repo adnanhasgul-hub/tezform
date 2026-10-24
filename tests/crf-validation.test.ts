@@ -54,10 +54,10 @@ test("every clinical heading, question, option, explanatory text and unit matche
 test("all source answers have unique fields and the sole Section 1 laboratory exception is respected", () => {
   assert.deepEqual(
     crfSections.map((section) => section.fields.length),
-    [9, 6, 5, 21, 18, 7, 4],
+    [9, 6, 5, 22, 18, 7, 4],
   );
-  assert.equal(fields.length, 70);
-  assert.equal(new Set(fields.map((item) => item.id)).size, 70);
+  assert.equal(fields.length, 71);
+  assert.equal(new Set(fields.map((item) => item.id)).size, 71);
   assert.equal(publicSections.flatMap((section) => section.fields).length, 49);
   const demographics = crfSections[0]!;
   const labIds = getEditableSections("admin-completion").flatMap((section) =>
@@ -139,16 +139,16 @@ test("conditional source answers are separate, retain their values and are valid
 
 test("DVT choices remain multiple and independent; lab units and all 14 ISTH questions are preserved", () => {
   assert.equal(
-    validateField(field("dvtLocations"), ["İliak", "Popliteal"]),
+    validateField(field("dvtRightLocations"), ["İliak", "Popliteal"]),
     undefined,
   );
   assert.equal(validateField(field("dvtSide"), ["Sağ", "Sol"]), undefined);
   assert(validateField(field("dvtSide"), ["Sağ", "Sağ"]));
   const values = createEmptyCrf(),
     other = createEmptyCrf();
-  values.dvtLocations.push("Femoral");
+  values.dvtRightLocations.push("Femoral");
   assert.deepEqual(values.dvtSide, []);
-  assert.deepEqual(other.dvtLocations, []);
+  assert.deepEqual(other.dvtRightLocations, []);
   assert.equal(field("egfr").unit, "mL/dk");
   assert.equal(field("sodium").unit, "mEq/L");
   assert.equal(field("potassium").unit, "mEq/L");
@@ -189,11 +189,20 @@ test("unapproved clinical sections and Section 7 questions exactly retain the 04
   function getSection(text: string, sectionNumber: number) {
     return text.split(`BÖLÜM ${sectionNumber}:`)[1]!.split(/BÖLÜM \d+:/)[0]!;
   }
-  for (const number of [3, 4, 5, 6])
+  for (const number of [3, 5, 6])
     assert.equal(
       normalize(getSection(revised, number)),
       normalize(getSection(baseline, number)),
     );
+  // Phase A intentionally revises only the DVT side/location block; all 19 labs stay exact.
+  const labBlock = (text: string) => getSection(text, 4).split("3. Detaylı Laboratuvar Parametreleri")[1]!;
+  assert.equal(normalize(labBlock(revised)), normalize(labBlock(baseline)));
+  const originalLocations = ["İliak", "Femoral", "Popliteal", "Üst Ekstremite", "IVC", "SVC", "Juguler"];
+  for (const id of ["dvtRightLocations", "dvtLeftLocations"]) {
+    const item = field(id);
+    assert(item.kind === "multiselect");
+    assert.deepEqual(item.options, originalLocations);
+  }
   const old7 = getSection(baseline, 7)
     .replace("İmza / Kaşe:", "")
     .replace(/Tarih:\s*$/, "");

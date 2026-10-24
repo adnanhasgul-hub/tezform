@@ -30,6 +30,7 @@ export async function checkAdmin(browser, origin) {
       const empty=investigationValues(createEmptyCrf());
       const full={...empty};
       for(const field of investigationSection.fields)full[field.id]=field.kind==='multiselect'?[field.options[0]]:'1';
+      full.dvtSide=['Sağ'];full.dvtLeftLocations=[];
       const records=[
         {id:'aaaaaaaaaaaaaaaaaaaa',subjectCode:'AHT-000',subjectNumber:0,status:'completed',investigations:{},doctor:'Dr. Mehmet'},
         {id:'bbbbbbbbbbbbbbbbbbbb',subjectCode:'AHT-001',subjectNumber:1,status:'completed',investigations:{...empty,bun:'15'},doctor:''},
