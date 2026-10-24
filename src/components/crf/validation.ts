@@ -11,6 +11,7 @@ import { isFieldVisible, publicSections } from "./sections.ts";
 export type CrfErrors = Partial<Record<FieldId, string>>;
 
 const optionalPublicFieldIds = new Set<FieldId>([
+  "treatmentDurationYears",
   "bleedingOnsetInterval",
   "researchNotes",
 ]);
