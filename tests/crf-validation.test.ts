@@ -11,6 +11,7 @@ import {
   publicSections,
 } from "../src/components/crf/sections.ts";
 import {
+  isPublicFieldRequired,
   validateField,
   validatePublicCrf,
 } from "../src/components/crf/validation.ts";
@@ -86,19 +87,31 @@ test("public and admin access remain separated, including validation", () => {
   );
   assert(crfSections.every((section) => !isSectionEditable(section, "print")));
   const values = createEmptyCrf();
+  const baselineErrors = validatePublicCrf(values);
   for (const item of getEditableSections("admin-completion")[0]!.fields) {
     if (item.kind === "multiselect") values[item.id] = ["invalid"];
     else values[item.id] = "invalid";
   }
-  assert.deepEqual(validatePublicCrf(values), {});
+  assert.deepEqual(validatePublicCrf(values), baselineErrors);
 });
 
-test("no clinical field is mandatory, and blank answers have no invented meaning", () => {
+test("public completion requires every applicable editable answer except the two approved Section 7 free-text fields", () => {
+  // Source metadata stays untouched; requiredness is an eCRF workflow policy.
   assert(fields.every((item) => item.required === false));
   const values = createEmptyCrf();
-  assert.deepEqual(validatePublicCrf(values), {});
-  for (const item of fields)
-    assert.equal(validateField(item, values[item.id]), undefined);
+  const errors = validatePublicCrf(values);
+  assert.equal(errors.bleedingOnsetInterval, undefined);
+  assert.equal(errors.researchNotes, undefined);
+  assert.equal(errors.bmi, undefined);
+  assert.equal(errors.nationalId, "Bu alan zorunludur.");
+  assert.equal(errors.sex, "Bu alan zorunludur.");
+  assert.equal(errors.bleedingDayDose, "Bu alan zorunludur.");
+  assert.equal(errors.investigatorName, "Bu alan zorunludur.");
+  assert.equal(isPublicFieldRequired(field("bleedingOnsetInterval")), false);
+  assert.equal(isPublicFieldRequired(field("researchNotes")), false);
+  assert.equal(isPublicFieldRequired(field("bmi")), false);
+  assert.equal(isPublicFieldRequired(field("nationalId")), true);
+  assert.equal(validateField(field("nationalId"), ""), undefined);
   assert.equal(values.adherence, "");
   assert.deepEqual(values.otherAntithrombotic, []);
 });
