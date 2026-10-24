@@ -109,10 +109,12 @@ service cloud.firestore {
         && data.investigations is map && data.investigations.size() == 0
         && validPublic(data.publicValues);
     }
-    function shortText(value, completed) {
-      // matches() accepts strings only; other types error and therefore deny.
-      return value.size() <= 32 && (completed
-        ? value.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*') : value is string);
+    function filledShortText(value) {
+      // matches() accepts strings only; non-strings error and therefore deny.
+      return value.size() <= 32 && value.matches('(?s).*[^\\s\\p{Z}\\x{FEFF}].*');
+    }
+    function optionalShortText(value) {
+      return value is string && value.size() <= 32;
     }
     function validDvtLocations(locations) {
       return locations is list
@@ -134,28 +136,54 @@ service cloud.firestore {
         && data.dvtSide is list
         && data.dvtSide.toSet().size() == data.dvtSide.size()
         && data.dvtSide.hasOnly(['Sağ', 'Sol'])
-        && (data.dvtSide.hasAny(['Sağ']) || data.dvtRightLocations.size() == 0)
-        && (data.dvtSide.hasAny(['Sol']) || data.dvtLeftLocations.size() == 0)
-        && (!completed || completeDvt(data))
-        && shortText(data.bun, completed)
-        && shortText(data.creatinine, completed)
-        && shortText(data.egfr, completed)
-        && shortText(data.calcium, completed)
-        && shortText(data.sodium, completed)
-        && shortText(data.potassium, completed)
-        && shortText(data.totalBilirubin, completed)
-        && shortText(data.directBilirubin, completed)
-        && shortText(data.ast, completed)
-        && shortText(data.alt, completed)
-        && shortText(data.totalProtein, completed)
-        && shortText(data.albumin, completed)
-        && shortText(data.wbc, completed)
-        && shortText(data.hemoglobin, completed)
-        && shortText(data.platelets, completed)
-        && shortText(data.hct, completed)
-        && shortText(data.pt, completed)
-        && shortText(data.inr, completed)
-        && shortText(data.aptt, completed);
+        && (data.dvtSide.hasAny(['Sağ'])
+          ? (!completed || data.dvtRightLocations.size() > 0)
+          : data.dvtRightLocations.size() == 0)
+        && (data.dvtSide.hasAny(['Sol'])
+          ? (!completed || data.dvtLeftLocations.size() > 0)
+          : data.dvtLeftLocations.size() == 0)
+        && (!completed || data.dvtSide.size() > 0)
+        // Select the lab validation branch once, avoiding 19 repeated status
+        // arguments/ternaries within a full public + Section 4 update.
+        && (completed
+          ? filledShortText(data.bun)
+          && filledShortText(data.creatinine)
+          && filledShortText(data.egfr)
+          && filledShortText(data.calcium)
+          && filledShortText(data.sodium)
+          && filledShortText(data.potassium)
+          && filledShortText(data.totalBilirubin)
+          && filledShortText(data.directBilirubin)
+          && filledShortText(data.ast)
+          && filledShortText(data.alt)
+          && filledShortText(data.totalProtein)
+          && filledShortText(data.albumin)
+          && filledShortText(data.wbc)
+          && filledShortText(data.hemoglobin)
+          && filledShortText(data.platelets)
+          && filledShortText(data.hct)
+          && filledShortText(data.pt)
+          && filledShortText(data.inr)
+          && filledShortText(data.aptt)
+          : optionalShortText(data.bun)
+          && optionalShortText(data.creatinine)
+          && optionalShortText(data.egfr)
+          && optionalShortText(data.calcium)
+          && optionalShortText(data.sodium)
+          && optionalShortText(data.potassium)
+          && optionalShortText(data.totalBilirubin)
+          && optionalShortText(data.directBilirubin)
+          && optionalShortText(data.ast)
+          && optionalShortText(data.alt)
+          && optionalShortText(data.totalProtein)
+          && optionalShortText(data.albumin)
+          && optionalShortText(data.wbc)
+          && optionalShortText(data.hemoglobin)
+          && optionalShortText(data.platelets)
+          && optionalShortText(data.hct)
+          && optionalShortText(data.pt)
+          && optionalShortText(data.inr)
+          && optionalShortText(data.aptt));
     }
     function investigationsComplete(data) {
       return completeDvt(data)
