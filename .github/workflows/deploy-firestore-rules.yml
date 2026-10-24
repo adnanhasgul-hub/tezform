@@ -1,0 +1,54 @@
+name: Deploy Firestore Rules (Manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firestore-rules-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/rules-test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Set up Java for Firestore emulator
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Log deployment source
+        run: |
+          git rev-parse HEAD
+          sha256sum firestore.rules
+
+      - name: Install locked dependencies and official Firebase tools
+        run: npm ci
+
+      # Tests use demo-tezform-rules; production credentials are introduced only afterwards.
+      - name: Verify Firestore Rules against emulator
+        run: npm run test:rules
+
+      - name: Authenticate to Firebase
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TEZFORM_2848F }}
+
+      - name: Deploy production Firestore Rules only
+        run: npx --no-install firebase deploy --only firestore:rules --project tezform-2848f --non-interactive
