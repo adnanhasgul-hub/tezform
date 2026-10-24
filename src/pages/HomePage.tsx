@@ -3,10 +3,12 @@ import { ensureAnonymousUser } from "../services/auth";
 import type { CrfDraftValues } from "../types/crf";
 import type { RegistrationResult } from "../services/registrationCore";
 import { PrintCrf } from "../components/crf/PrintCrf";
-import { formCopy } from "../components/crf/sections";
 import { BloodNotice } from "../components/crf/BloodNotice";
 import { CrfForm } from "../components/crf/CrfForm";
 import type { EligibilityAnswer } from "../types/crf";
+
+const FORM_TITLE =
+  "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu";
 
 export function HomePage() {
   const [eligibility, setEligibility] = useState<EligibilityAnswer>("");
@@ -41,7 +43,7 @@ export function HomePage() {
             +
           </span>
           <span>
-            {formCopy.title} <small>KLİNİK ARAŞTIRMA</small>
+            {FORM_TITLE} <small>KLİNİK ARAŞTIRMA</small>
           </span>
           <div className="topbar-actions">
             {!formOpen && (
@@ -51,21 +53,14 @@ export function HomePage() {
                 className="button secondary"
                 onClick={() => setPrintOpen(true)}
               >
-                Form Yazdır
+                Boş Form Yazdır
               </button>
-            )}
-            {!formOpen && (
-              <a href="/admin" className="button secondary admin-button">
-                Yönetici Paneli
-              </a>
             )}
           </div>
         </header>
         <main>
           <section className="intro" aria-labelledby="page-title">
-            <p className="eyebrow">ELEKTRONİK OLGU RAPOR FORMU</p>
-            <h1 id="page-title">{formCopy.title}</h1>
-            <p className="subtitle clinical-copy">{formCopy.subtitle}</p>
+            <h1 id="page-title">{FORM_TITLE}</h1>
           </section>
           {!formOpen && <BloodNotice />}
           {!saved && !attemptStarted && (
@@ -166,7 +161,7 @@ export function HomePage() {
         </main>
         <footer>
           Dr. Adnan Hasgül · Tez Araştırması{" "}
-          <span>eCRF / Form arayüzü taslağı</span>
+          <span>Form Doldurma Ekranı</span>
         </footer>
       </div>
       <PrintCrf
