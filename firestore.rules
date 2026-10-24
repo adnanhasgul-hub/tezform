@@ -26,7 +26,7 @@ service cloud.firestore {
     }
     function validCounter(data) {
       return data.keys().hasAll(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
-        && data.keys().hasOnly(['lastAllocatedNumber', 'lastSubjectId', 'lastRequestId', 'lastCreatedByUid'])
+        && data.keys().size() == 4
         && validNumber(data.lastAllocatedNumber)
         && subjectId(data.lastSubjectId) && uuid(data.lastRequestId)
         && data.lastCreatedByUid == request.auth.uid;
@@ -34,7 +34,7 @@ service cloud.firestore {
     function validPublic(data) {
       return data is map
         && data.keys().hasAll(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
-        && data.keys().hasOnly(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
+        && data.keys().size() == 50
         && data.nationalId is string
         && data.protocolDate is string
         && data.sex is string
@@ -96,7 +96,7 @@ service cloud.firestore {
     }
     function validSubject(data) {
       return data.keys().hasAll(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
-        && data.keys().hasOnly(['subjectCode', 'subjectNumber', 'status', 'createdAt', 'updatedAt', 'createdByUid', 'requestId', 'publicValues', 'investigations'])
+        && data.keys().size() == 9
         && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber)
         && data.status == 'pending_completion'
         && data.createdAt == request.time && data.updatedAt == request.time
@@ -110,7 +110,7 @@ service cloud.firestore {
     function validInvestigations(data) {
       return data is map
         && data.keys().hasAll(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
-        && data.keys().hasOnly(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
+        && data.keys().size() == 21
         && data.dvtLocations is list
         && data.dvtLocations.toSet().size() == data.dvtLocations.size()
         && data.dvtLocations.hasOnly(['İliak', 'Femoral', 'Popliteal', 'Üst Ekstremite', 'IVC', 'SVC', 'Juguler'])
@@ -164,7 +164,7 @@ service cloud.firestore {
       return admin()
         && after.diff(before).affectedKeys().hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
         && after.updatedAt == request.time
-        && validPublic(after.publicValues)
+        && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublic(after.publicValues))
         && validInvestigations(after.investigations)
         && after.status == (investigationsComplete(after.investigations) ? 'completed' : 'pending_completion');
     }
@@ -180,7 +180,7 @@ service cloud.firestore {
     }
     function validPool(data) {
       return data.keys().hasAll(['numbers', 'lastSubjectId', 'operation', 'insertIndex'])
-        && data.keys().hasOnly(['numbers', 'lastSubjectId', 'operation', 'insertIndex'])
+        && data.keys().size() == 4
         && data.numbers is list && subjectId(data.lastSubjectId) && data.insertIndex is int;
     }
     function validAllocationNumber(subject, number, previous, next) {
@@ -224,7 +224,7 @@ service cloud.firestore {
     }
     function validReceipt(data, requestId) {
       return data.keys().hasAll(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
-        && data.keys().hasOnly(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
+        && data.keys().size() == 4
         && subjectId(data.subjectId) && data.requestId == requestId && uuid(requestId)
         && validNumber(data.subjectNumber) && data.subjectCode == code(data.subjectNumber);
     }

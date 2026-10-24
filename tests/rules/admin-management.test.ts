@@ -86,17 +86,28 @@ function publicValues(): PublicCrfValues {
 }
 const request = (number: number) =>
   `00000000-0000-4000-8000-${String(number).padStart(12, "0")}`;
-const allocate = (db: Firestore, uid: string, number: number) =>
-  retryRegistration(
-    () =>
-      allocateSubject(
-        createRegistrationStore(db),
-        uid,
-        request(number),
-        publicValues(),
-      ),
-    async () => {},
-  );
+async function allocate(db: Firestore, uid: string, number: number) {
+  let lastFailure: unknown;
+  try {
+    return await retryRegistration(async () => {
+      try {
+        return await allocateSubject(
+          createRegistrationStore(db),
+          uid,
+          request(number),
+          publicValues(),
+        );
+      } catch (error) {
+        lastFailure = error;
+        throw error;
+      }
+    });
+  } catch (error) {
+    // Synthetic emulator fixtures only; preserve the underlying Rules denial in CI.
+    throw lastFailure ?? error;
+  }
+}
+
 function fullInvestigations() {
   const values = investigationValues(createEmptyCrf());
   for (const field of investigationSection.fields) {
@@ -231,10 +242,14 @@ test("smallest free code is consumed exactly once under real concurrent allocati
       .numbers,
     [2, 4],
   );
-  const results = await Promise.all([
+  const outcomes = await Promise.allSettled([
     allocate(anon("a"), "a", 20),
     allocate(anon("b"), "b", 21),
   ]);
+  const results = outcomes.map((outcome) => {
+    if (outcome.status === "rejected") throw outcome.reason;
+    return outcome.value;
+  });
   assert.deepEqual(
     results.map((result) => result.subjectNumber).sort((a, b) => a - b),
     [2, 4],
