@@ -32,7 +32,7 @@ try {
       "demo-tezform-rules",
       "--config",
       join(directory, "firebase.json"),
-      "node --test tests/rules/*.test.ts",
+      "node --test --test-concurrency=1 tests/rules/*.test.ts",
     ],
     {
       cwd: root,
