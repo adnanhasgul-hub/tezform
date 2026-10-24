@@ -49,8 +49,7 @@ export type PublicFieldId =
   | "bleedingOnsetInterval"
   | "bleedingDayDose"
   | "researchNotes"
-  | "investigatorName"
-  | "assessmentDate";
+  | "investigatorName";
 
 export type InvestigationFieldId =
   | "dvtLocations"

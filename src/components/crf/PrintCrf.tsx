@@ -1,8 +1,22 @@
+import { getTreatmentDuration } from "./calculations";
 import { useEffect, useRef } from "react";
-import type { CrfField } from "../../types/crf";
+import type { CrfField, CrfDraftValues } from "../../types/crf";
 import { crfSections, formCopy, getFieldAccessibleLabel } from "./sections";
 
-function PrintField({ field }: { field: CrfField }) {
+function PrintField({
+  field,
+  values,
+}: {
+  field: CrfField;
+  values?: CrfDraftValues;
+}) {
+  const answer = values?.[field.id];
+  const text =
+    typeof answer === "number"
+      ? answer.toFixed(1)
+      : typeof answer === "string"
+        ? answer
+        : "";
   return (
     <div
       className={`print-field${field.when ? " paper-option-details" : ""}`}
@@ -18,7 +32,15 @@ function PrintField({ field }: { field: CrfField }) {
         <div className="print-options">
           {field.options.map((option) => (
             <span key={option}>
-              <span className="paper-checkbox" aria-hidden="true" />
+              <span className="paper-checkbox" aria-hidden="true">
+                {(
+                  Array.isArray(answer)
+                    ? answer.includes(option)
+                    : answer === option
+                )
+                  ? "✓"
+                  : ""}
+              </span>
               {option}
             </span>
           ))}
@@ -29,11 +51,25 @@ function PrintField({ field }: { field: CrfField }) {
             className={`paper-answer${field.kind === "textarea" ? " paper-notes" : ""}`}
             aria-label={getFieldAccessibleLabel(field)}
           >
-            {field.printTemplate}
+            {values ? text : field.printTemplate}
           </div>
           {field.unit && <span>{field.unit}</span>}
         </div>
       )}
+      {values &&
+        field.id === "treatmentDurationMonths" &&
+        (() => {
+          const duration = getTreatmentDuration(
+            values.treatmentDurationYears,
+            values.treatmentDurationMonths,
+          );
+          return duration ? (
+            <p className="print-field-hint">
+              {duration.years} yıl {duration.months} ay ({duration.totalMonths}{" "}
+              ay)
+            </p>
+          ) : null;
+        })()}
       {field.hint && (
         <p className="print-field-hint clinical-copy">{field.hint}</p>
       )}
@@ -43,9 +79,15 @@ function PrintField({ field }: { field: CrfField }) {
 export function PrintCrf({
   preview,
   onClose,
+  values,
+  subjectCode,
+  blocked = false,
 }: {
   preview: boolean;
   onClose: () => void;
+  values?: CrfDraftValues;
+  subjectCode?: string;
+  blocked?: boolean;
 }) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -54,13 +96,16 @@ export function PrintCrf({
       titleRef.current?.scrollIntoView({ block: "start", behavior: "instant" });
     }
   }, [preview]);
+  if (blocked) return null;
   return (
     <section
       className={`print-view${preview ? " is-preview" : ""}`}
-      aria-label="Yazdırılabilir boş CRF"
+      aria-label={
+        values ? "Yazdırılabilir kayıtlı CRF" : "Yazdırılabilir boş CRF"
+      }
     >
       <div className="print-toolbar">
-        <p>A4 · Boş manuel form · Bölüm 4 dahil tüm bölümler</p>
+        <p>A4 · Bölüm 4 dahil tüm bölümler</p>
         <div>
           <button className="button secondary" type="button" onClick={onClose}>
             Forma Dön
@@ -83,6 +128,9 @@ export function PrintCrf({
           <p className="print-warning">
             <strong>{formCopy.warning}</strong>
           </p>
+          <p className="print-subject-code">
+            <strong>Hasta Kodu: {subjectCode ?? "__________________"}</strong>
+          </p>
         </header>
         {crfSections.map((section) => (
           <section
@@ -101,7 +149,7 @@ export function PrintCrf({
                     {field.group}
                   </h3>
                 )}
-                <PrintField field={field} />
+                <PrintField field={field} values={values} />
               </div>
             ))}
           </section>

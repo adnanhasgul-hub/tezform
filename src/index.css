@@ -1446,3 +1446,214 @@ progress::-moz-progress-bar {
     scroll-margin-top: 140px;
   }
 }
+/* Compact A4 paper layout. Screen cards and clinical metadata stay unchanged. */
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+@media print {
+  .print-sheet {
+    column-count: 2;
+    column-gap: 5mm;
+    font-size: 8.5pt;
+    line-height: 1.15;
+  }
+  .print-header {
+    column-span: all;
+    margin: 0 0 5pt;
+  }
+  .print-header h1 {
+    font-size: 12pt;
+    margin: 0 0 3pt;
+  }
+  .print-header p {
+    margin: 2pt 0;
+  }
+  .print-warning {
+    padding: 3pt;
+    border-width: 1pt;
+    font-size: 8.5pt;
+  }
+  .print-subject-code {
+    font-size: 11pt;
+  }
+  .print-section,
+  .print-section[data-print-section="4"] {
+    break-before: auto;
+  }
+  .print-section h2 {
+    font-size: 10pt;
+    line-height: 1.15;
+    margin: 5pt 0 3pt;
+    padding-bottom: 2pt;
+    border-width: 1pt;
+  }
+  .print-group-heading {
+    font-size: 8.5pt;
+    line-height: 1.15;
+    margin: 4pt 0 2pt;
+    padding-bottom: 2pt;
+  }
+  .print-field-block,
+  .print-field {
+    margin-bottom: 3pt;
+  }
+  .print-field-label {
+    font-size: 8.5pt;
+    margin: 0 0 2pt;
+  }
+  .print-options {
+    flex-direction: row;
+    gap: 2pt 5pt;
+    font-size: 8.5pt;
+  }
+  .print-options > span {
+    gap: 3pt;
+  }
+  .paper-checkbox {
+    width: 7pt;
+    height: 7pt;
+    font-size: 7pt;
+    line-height: 7pt;
+    text-align: center;
+  }
+  .paper-value {
+    gap: 3pt;
+  }
+  .paper-value .paper-answer {
+    min-height: 4mm;
+    height: auto;
+    padding: 1pt 3pt;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .paper-value .paper-notes {
+    min-height: 8mm;
+  }
+  .paper-option-details {
+    margin-left: 7pt;
+  }
+  .print-field-hint {
+    font-size: 8.5pt;
+    margin: 2pt 0;
+  }
+  .print-field .field-prefix {
+    font-size: 8.5pt;
+    margin: 0 0 2pt;
+  }
+  .print-section[data-print-section="4"]
+    .print-field-block:nth-of-type(n + 3)
+    .print-field {
+    display: flex;
+    align-items: center;
+    gap: 3pt;
+  }
+  .print-section[data-print-section="4"]
+    .print-field-block:nth-of-type(n + 3)
+    .print-field-label {
+    min-width: 58pt;
+    margin: 0;
+  }
+  .print-section[data-print-section="4"] .paper-value {
+    flex: 1;
+    min-width: 0;
+  }
+}
+/* Registration confirmation and the separate admin sign-in. */
+.topbar-actions a {
+  text-decoration: none;
+}
+.registration-complete {
+  margin: 40px auto;
+  padding: 28px;
+  max-width: 720px;
+  background: white;
+  border: 1px solid #dce1ed;
+  border-radius: 14px;
+  text-align: center;
+}
+.completion-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.saved-code {
+  color: #643796;
+  font-size: 28px;
+}
+.code-dialog {
+  max-width: 600px;
+  width: calc(100% - 32px);
+  border: 2px solid #8150af;
+  border-radius: 18px;
+  padding: 0;
+  text-align: center;
+  color: #263952;
+}
+.code-dialog::backdrop {
+  background: #102037c9;
+}
+.code-dialog-content {
+  padding: 32px 24px;
+}
+.code-dialog h2 {
+  font-size: 18px;
+  margin: 0 0 24px;
+}
+.assigned-code-label {
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+.assigned-code {
+  font-size: clamp(40px, 8vw, 64px);
+  font-weight: 850;
+  color: #643796;
+  margin: 16px 0;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  animation: code-emphasis 3s ease-in-out infinite;
+}
+@keyframes code-emphasis {
+  50% {
+    color: #854db8;
+  }
+}
+.save-error {
+  padding: 14px;
+  background: #fff0f1;
+  border: 1px solid #e0a6ae;
+  color: #8d2033;
+  border-radius: 8px;
+}
+.admin-page {
+  max-width: 520px;
+  margin: 48px auto;
+  padding: 24px;
+}
+.admin-page form {
+  display: grid;
+  gap: 16px;
+}
+.admin-page input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 10px;
+  border: 1px solid #bbc6d4;
+  border-radius: 8px;
+  font: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .assigned-code {
+    animation: none;
+  }
+}
+@media print {
+  .code-dialog,
+  .registration-complete {
+    display: none !important;
+  }
+}

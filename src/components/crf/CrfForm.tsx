@@ -1,5 +1,12 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import type { CrfValue, CrfDraftValues, FieldId } from "../../types/crf";
+import {
+  registerSubject,
+  RegistrationConnectionError,
+} from "../../services/registration";
+import type { RegistrationResult } from "../../services/registrationCore";
+import { createSubmissionController } from "../../services/submissionState";
+import { RegistrationComplete } from "./RegistrationComplete";
 import { BloodNotice } from "./BloodNotice";
 import { FormField } from "./FormField";
 import {
@@ -11,7 +18,22 @@ import {
 import { describeTreatmentDuration, recalculateDerived } from "./calculations";
 import { validatePublicCrf, validateSection } from "./validation";
 
-export function CrfForm() {
+interface Props {
+  onAttemptStarted?: () => void;
+  onRegistered: (snapshot: CrfDraftValues, result: RegistrationResult) => void;
+  onAcknowledged: () => void;
+  onPrint: () => void;
+  onClose: () => void;
+  save?: typeof registerSubject;
+}
+export function CrfForm({
+  onRegistered,
+  onAttemptStarted,
+  onAcknowledged,
+  onPrint,
+  onClose,
+  save = registerSubject,
+}: Props) {
   const [values, setValues] = useState<CrfDraftValues>(createNewCrf);
   const [activeIndex, setActiveIndex] = useState(0);
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set());
@@ -20,7 +42,14 @@ export function CrfForm() {
     () => new Set(),
   );
   const [showAllErrors, setShowAllErrors] = useState(false);
-  const [validated, setValidated] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [locked, setLocked] = useState(false);
+  const [codeAcknowledged, setCodeAcknowledged] = useState(false);
+  const [printReady, setPrintReady] = useState(false);
+  const [result, setResult] = useState<RegistrationResult | null>(null);
+  const submittingRef = useRef(false);
+  const [controller] = useState(() => createSubmissionController(save));
   const [focusRequest, setFocusRequest] = useState<{ fieldId: FieldId } | null>(
     null,
   );
@@ -40,6 +69,16 @@ export function CrfForm() {
     target?.scrollIntoView({ block: "center", behavior: "instant" });
   }, [activeIndex, focusRequest]);
 
+  useEffect(() => {
+    if (!locked || (result && codeAcknowledged)) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [locked, result, codeAcknowledged]);
+
   function navigate(index: number, fieldId?: FieldId) {
     setVisited((previous) => new Set(previous).add(active.id));
     setActiveIndex(index);
@@ -47,7 +86,7 @@ export function CrfForm() {
   }
   function updateField(id: FieldId, value: CrfValue) {
     setValues((previous) => recalculateDerived({ ...previous, [id]: value }));
-    setValidated(false);
+    setSaveError("");
   }
   function next() {
     const invalid = active.fields.find((field) => errors[field.id]);
@@ -56,17 +95,44 @@ export function CrfForm() {
       navigate(activeIndex, invalid.id);
     } else navigate(activeIndex + 1);
   }
-  function validateAll() {
+  async function validateAll() {
+    if (submittingRef.current || result) return;
     setShowAllErrors(true);
     for (const [index, section] of publicSections.entries()) {
       const invalid = section.fields.find((field) => errors[field.id]);
       if (invalid) {
-        setValidated(false);
+        setSaveError("");
         navigate(index, invalid.id);
         return;
       }
     }
-    setValidated(true);
+    onAttemptStarted?.();
+    submittingRef.current = true;
+    setBusy(true);
+    setLocked(true);
+    setSaveError("");
+    let saved: RegistrationResult | undefined;
+    try {
+      saved = await controller.submit(values);
+    } catch (error) {
+      setSaveError(
+        error instanceof RegistrationConnectionError
+          ? "Kayıt sistemiyle bağlantı kurulamadı. Lütfen tekrar deneyin."
+          : "Kayıt oluşturulamadı. Lütfen tekrar deneyin.",
+      );
+    } finally {
+      submittingRef.current = false;
+      setBusy(false);
+    }
+    if (saved) {
+      setResult(saved);
+      try {
+        onRegistered(controller.snapshot!, saved);
+        setPrintReady(true);
+      } catch {
+        setSaveError("Kayıt tamamlandı; yazdırma görünümü hazırlanamadı.");
+      }
+    }
   }
   function renderField(field: (typeof active.fields)[number]) {
     return (
@@ -87,6 +153,20 @@ export function CrfForm() {
     values.treatmentDurationYears,
     values.treatmentDurationMonths,
   );
+  if (result)
+    return (
+      <RegistrationComplete
+        code={result.subjectCode}
+        printReady={printReady}
+        notice={saveError}
+        onAcknowledged={() => {
+          setCodeAcknowledged(true);
+          onAcknowledged();
+        }}
+        onPrint={onPrint}
+        onClose={onClose}
+      />
+    );
   return (
     <section className="crf-container" aria-labelledby="crf-title">
       <div className="form-intro">
@@ -101,9 +181,9 @@ export function CrfForm() {
       <details className="workflow-notes">
         <summary>Form hakkında</summary>
         <p>
-          Cevaplar yalnızca sayfa belleğinde tutulur; sayfa yenilendiğinde
-          silinir. Otomatik bölüm geçişi kapalıdır; boş cevaplar bir seçenek
-          olarak yorumlanmaz.
+          Cevaplar Formu Kaydet işlemi başarılı olana kadar yalnızca sayfa
+          belleğinde tutulur. Sayfayı yenilemeyin. Otomatik bölüm geçişi
+          kapalıdır; boş cevaplar bir seçenek olarak yorumlanmaz.
         </p>
         <p>
           <strong>Bölüm 4:</strong> {investigationsNotice}
@@ -149,7 +229,7 @@ export function CrfForm() {
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          if (isLast) validateAll();
+          if (isLast) void validateAll();
         }}
       >
         <section
@@ -169,72 +249,79 @@ export function CrfForm() {
               {active.title}
             </h3>
           </div>
-          <div className={`field-grid section-grid-${active.number}`}>
-            {active.fields
-              .filter(
-                (field) =>
-                  !field.when && field.id !== "treatmentDurationMonths",
-              )
-              .map((field) => {
-                if (field.id === "treatmentDurationYears") {
-                  const monthsField = active.fields.find(
-                    (item) => item.id === "treatmentDurationMonths",
-                  )!;
-                  return (
-                    <div key={field.id} className="question-card duration-card">
-                      <h4 className="clinical-group-heading">{field.group}</h4>
-                      <div className="duration-inputs">
-                        {renderField(field)}
-                        {renderField(monthsField)}
-                      </div>
-                      <output
-                        className="duration-result"
-                        aria-live="polite"
-                        aria-label="Tedavi süresi sonucu"
+          <fieldset disabled={locked} aria-label="CRF cevapları">
+            <div className={`field-grid section-grid-${active.number}`}>
+              {active.fields
+                .filter(
+                  (field) =>
+                    !field.when && field.id !== "treatmentDurationMonths",
+                )
+                .map((field) => {
+                  if (field.id === "treatmentDurationYears") {
+                    const monthsField = active.fields.find(
+                      (item) => item.id === "treatmentDurationMonths",
+                    )!;
+                    return (
+                      <div
+                        key={field.id}
+                        className="question-card duration-card"
                       >
-                        <strong>{durationDescription || "—"}</strong>
-                        {values.treatmentDurationTotalMonths !== null && (
-                          <span>
-                            Toplam {values.treatmentDurationTotalMonths} ay
-                          </span>
-                        )}
-                      </output>
-                    </div>
-                  );
-                }
-                const children = active.fields.filter(
-                  (item) =>
-                    item.when?.fieldId === field.id &&
-                    isFieldVisible(item, values),
-                );
-                const wide =
-                  (field.kind === "radio" || field.kind === "multiselect") &&
-                  field.options.some((option) => option.length > 60);
-                return (
-                  <Fragment key={field.id}>
-                    {field.group && (
-                      <h4 className="clinical-group-heading full-width">
-                        {field.group}
-                      </h4>
-                    )}
-                    <div
-                      className={`question-block${wide ? " full-width" : ""}`}
-                    >
-                      <div className="question-card">
-                        {renderField(field)}
-                        {children.length > 0 && (
-                          <div className="conditional-details">
-                            {children.map((child) => (
-                              <div key={child.id}>{renderField(child)}</div>
-                            ))}
-                          </div>
-                        )}
+                        <h4 className="clinical-group-heading">
+                          {field.group}
+                        </h4>
+                        <div className="duration-inputs">
+                          {renderField(field)}
+                          {renderField(monthsField)}
+                        </div>
+                        <output
+                          className="duration-result"
+                          aria-live="polite"
+                          aria-label="Tedavi süresi sonucu"
+                        >
+                          <strong>{durationDescription || "—"}</strong>
+                          {values.treatmentDurationTotalMonths !== null && (
+                            <span>
+                              Toplam {values.treatmentDurationTotalMonths} ay
+                            </span>
+                          )}
+                        </output>
                       </div>
-                    </div>
-                  </Fragment>
-                );
-              })}
-          </div>
+                    );
+                  }
+                  const children = active.fields.filter(
+                    (item) =>
+                      item.when?.fieldId === field.id &&
+                      isFieldVisible(item, values),
+                  );
+                  const wide =
+                    (field.kind === "radio" || field.kind === "multiselect") &&
+                    field.options.some((option) => option.length > 60);
+                  return (
+                    <Fragment key={field.id}>
+                      {field.group && (
+                        <h4 className="clinical-group-heading full-width">
+                          {field.group}
+                        </h4>
+                      )}
+                      <div
+                        className={`question-block${wide ? " full-width" : ""}`}
+                      >
+                        <div className="question-card">
+                          {renderField(field)}
+                          {children.length > 0 && (
+                            <div className="conditional-details">
+                              {children.map((child) => (
+                                <div key={child.id}>{renderField(child)}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Fragment>
+                  );
+                })}
+            </div>
+          </fieldset>
         </section>
         <div className="wizard-actions">
           <button
@@ -246,8 +333,8 @@ export function CrfForm() {
             Önceki Bölüm
           </button>
           {isLast ? (
-            <button className="button primary" type="submit">
-              Kaydet
+            <button className="button primary" type="submit" disabled={busy}>
+              {busy ? "Kaydediliyor..." : "Formu Kaydet"}
             </button>
           ) : (
             <button className="button primary" type="button" onClick={next}>
@@ -255,16 +342,18 @@ export function CrfForm() {
             </button>
           )}
         </div>
-        <div role="status">
-          {validated && (
-            <p className="validation-success">
-              Girilen alanların biçim kontrolü tamamlandı. Veri kaydedilmedi.
-            </p>
-          )}
-        </div>
-        <p className="form-end">
-          “Kaydet” yalnızca biçim kontrolü yapar; bu sürümde kayıt oluşturmaz.
-        </p>
+        <p role="status">{busy ? "Kaydediliyor..." : ""}</p>
+        {saveError && (
+          <p className="save-error" role="alert">
+            {saveError}
+          </p>
+        )}
+        {locked && !busy && (
+          <p className="form-end">
+            Kayıt denemesinde gönderilen cevaplar korunuyor. Tekrar denemek aynı
+            kayıt isteğini kullanır.
+          </p>
+        )}
       </form>
     </section>
   );
