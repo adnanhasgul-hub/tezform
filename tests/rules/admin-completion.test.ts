@@ -166,12 +166,63 @@ test("admin completion cannot alter patient-entered or allocation fields", async
   );
 });
 
-test("completed Section 4 is immutable in this phase", async () => {
+test("authorized admin can edit only Section 4 after completion", async () => {
   const admin = password("admin-user");
   await assertSucceeds(completeWith(admin));
+
+  await assertSucceeds(
+    updateDoc(doc(admin, subjectPath), {
+      investigations: { ...investigations(), bun: "99" },
+      updatedAt: serverTimestamp(),
+    }),
+  );
+
+  const saved = (await assertSucceeds(getDoc(doc(admin, subjectPath)))).data()!;
+  assert.equal(saved.status, "completed");
+  assert.equal(saved.investigations.bun, "99");
+  assert.deepEqual(saved.publicValues, { protected: "unchanged" });
+});
+
+test("completed Section 4 edit cannot change status, public data or allocation fields", async () => {
+  const admin = password("admin-user");
+  await assertSucceeds(completeWith(admin));
+
   await assertFails(
     updateDoc(doc(admin, subjectPath), {
-      "investigations.bun": "99",
+      investigations: { ...investigations(), bun: "98" },
+      publicValues: { protected: "changed" },
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    updateDoc(doc(admin, subjectPath), {
+      investigations: { ...investigations(), bun: "98" },
+      subjectCode: "AHT-999",
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    updateDoc(doc(admin, subjectPath), {
+      investigations: { ...investigations(), bun: "98" },
+      status: "pending_completion",
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("anonymous and non-admin users cannot edit completed Section 4", async () => {
+  const admin = password("admin-user");
+  await assertSucceeds(completeWith(admin));
+
+  await assertFails(
+    updateDoc(doc(anonymous(), subjectPath), {
+      investigations: { ...investigations(), bun: "97" },
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    updateDoc(doc(password("not-admin"), subjectPath), {
+      investigations: { ...investigations(), bun: "97" },
       updatedAt: serverTimestamp(),
     }),
   );

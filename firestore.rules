@@ -145,6 +145,14 @@ service cloud.firestore {
         && after.updatedAt == request.time
         && validInvestigations(after.investigations);
     }
+    function validAdminInvestigationEdit(before, after) {
+      return admin()
+        && before.status == 'completed'
+        && after.status == 'completed'
+        && after.diff(before).affectedKeys().hasOnly(['updatedAt', 'investigations'])
+        && after.updatedAt == request.time
+        && validInvestigations(after.investigations);
+    }
     function validReceipt(data, requestId) {
       return data.keys().hasAll(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
         && data.keys().hasOnly(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
@@ -182,7 +190,8 @@ service cloud.firestore {
       allow get, list: if admin();
       allow create: if anonymous() && subjectId(id) && validSubject(request.resource.data)
         && allocation(id, request.resource.data.requestId, request.resource.data.subjectNumber);
-      allow update: if validAdminCompletion(resource.data, request.resource.data);
+      allow update: if validAdminCompletion(resource.data, request.resource.data)
+        || validAdminInvestigationEdit(resource.data, request.resource.data);
       allow delete: if false;
     }
     match /submissionRequests/{uid}/requests/{id} {
