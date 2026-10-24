@@ -4,12 +4,11 @@ import type {
   InvestigationFieldId,
   InvestigationValues,
 } from "../types/crf";
-import {
-  getEditableSections,
-} from "./crf/sections";
+import { getEditableSections } from "./crf/sections";
 import { FormField } from "./crf/FormField";
 import {
   completeAdminSubject,
+  updateAdminSubjectInvestigations,
   type AdminSubjectSummary,
 } from "../services/adminRecords";
 
@@ -17,12 +16,10 @@ interface Props {
   subject: AdminSubjectSummary;
   onBack: () => void;
   onCompleted: () => Promise<void> | void;
+  allowCompletedEdit?: boolean;
 }
 
-type InvestigationDraft = Record<
-  InvestigationFieldId,
-  string | string[]
->;
+type InvestigationDraft = Record<InvestigationFieldId, string | string[]>;
 
 const investigationSection = getEditableSections("admin-completion")[0]!;
 
@@ -48,14 +45,16 @@ export function AdminInvestigationForm({
   subject,
   onBack,
   onCompleted,
+  allowCompletedEdit = false,
 }: Props) {
-  const readOnly = subject.status === "completed";
+  const editingCompleted =
+    subject.status === "completed" && allowCompletedEdit;
+  const readOnly = subject.status === "completed" && !editingCompleted;
   const [values, setValues] = useState<InvestigationDraft>(() =>
     createInvestigationDraft(subject.investigations),
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
 
   const completedValues = useMemo(
     () => values as InvestigationValues,
@@ -74,22 +73,29 @@ export function AdminInvestigationForm({
     setError("");
   }
 
-  async function complete() {
+  async function save() {
     if (busy || readOnly) return;
     const confirmed = window.confirm(
-      `${subject.subjectCode} için Bölüm 4 kaydedilecek ve kayıt “Tamamlandı” durumuna alınacak. Devam edilsin mi?`,
+      editingCompleted
+        ? `${subject.subjectCode} için Bölüm 4 değişiklikleri kaydedilecek. Devam edilsin mi?`
+        : `${subject.subjectCode} için Bölüm 4 kaydedilecek ve kayıt “Tamamlandı” durumuna alınacak. Devam edilsin mi?`,
     );
     if (!confirmed) return;
 
     setBusy(true);
     setError("");
     try {
-      await completeAdminSubject(subject.id, completedValues);
-      setSaved(true);
+      if (editingCompleted) {
+        await updateAdminSubjectInvestigations(subject.id, completedValues);
+      } else {
+        await completeAdminSubject(subject.id, completedValues);
+      }
       await onCompleted();
     } catch {
       setError(
-        "Bölüm 4 kaydedilemedi. Yönetici yetkisini ve bağlantıyı kontrol edip tekrar deneyin.",
+        editingCompleted
+          ? "Bölüm 4 değişiklikleri kaydedilemedi. Yönetici yetkisini ve bağlantıyı kontrol edip tekrar deneyin."
+          : "Bölüm 4 kaydedilemedi. Yönetici yetkisini ve bağlantıyı kontrol edip tekrar deneyin.",
       );
     } finally {
       setBusy(false);
@@ -100,18 +106,27 @@ export function AdminInvestigationForm({
     <section className="admin-completion" aria-labelledby="admin-completion-title">
       <div className="admin-completion-heading">
         <div>
-          <p className="eyebrow">{subject.subjectCode} · BÖLÜM 4</p>
+          <p className="eyebrow">
+            {subject.subjectCode} · BÖLÜM 4
+            {editingCompleted ? " · DÜZENLE" : ""}
+          </p>
           <h2 id="admin-completion-title">{investigationSection.title}</h2>
         </div>
         <span className={`admin-status admin-status-${subject.status}`}>
-          {readOnly ? "Tamamlandı" : "Tamamlanmayı Bekliyor"}
+          {editingCompleted
+            ? "Tamamlandı · Düzenleniyor"
+            : readOnly
+              ? "Tamamlandı"
+              : "Tamamlanmayı Bekliyor"}
         </span>
       </div>
 
       <p className="admin-completion-note">
-        {readOnly
-          ? "Bu kayıt tamamlanmıştır. Bölüm 4 değerleri salt okunur olarak gösteriliyor."
-          : "Radyoloji ve laboratuvar değerlerini girin. Alanlar kaynak forma uygun olarak isteğe bağlıdır; Kaydı Tamamla işlemi sonrasında bu ekran salt okunur olur."}
+        {editingCompleted
+          ? "Yalnızca Bölüm 4 radyoloji ve laboratuvar değerleri düzenlenebilir. Hasta tarafından girilen Bölüm 1, 2, 3, 5, 6 ve 7 verileri değiştirilemez."
+          : readOnly
+            ? "Bu kayıt tamamlanmıştır. Bölüm 4 değerleri salt okunur olarak gösteriliyor."
+            : "Radyoloji ve laboratuvar değerlerini girin. Alanlar kaynak forma uygun olarak isteğe bağlıdır; Kaydı Tamamla işlemi sonrasında kayıt tamamlanır."}
       </p>
 
       <form
@@ -151,11 +166,6 @@ export function AdminInvestigationForm({
             {error}
           </p>
         )}
-        {saved && (
-          <p className="admin-success" role="status">
-            Bölüm 4 kaydedildi. {subject.subjectCode} kaydı tamamlandı.
-          </p>
-        )}
 
         <div className="admin-completion-actions">
           <button
@@ -166,14 +176,18 @@ export function AdminInvestigationForm({
           >
             ← Hasta Listesine Dön
           </button>
-          {!readOnly && !saved && (
+          {!readOnly && (
             <button
               type="button"
               className="button primary"
               disabled={busy}
-              onClick={() => void complete()}
+              onClick={() => void save()}
             >
-              {busy ? "Kaydediliyor…" : "Bölüm 4'ü Kaydet ve Kaydı Tamamla"}
+              {busy
+                ? "Kaydediliyor…"
+                : editingCompleted
+                  ? "Değişiklikleri Kaydet"
+                  : "Bölüm 4'ü Kaydet ve Kaydı Tamamla"}
             </button>
           )}
         </div>
