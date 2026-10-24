@@ -1,3 +1,11 @@
+import { investigationValues, recordStatus } from "./adminModel";
+import { preparePublicValues } from "./registrationCore";
+import { validateSection } from "../components/crf/validation";
+import { investigationSection } from "./adminModel";
+import { reauthenticateAdmin } from "./auth";
+import { reauthenticatedDelete } from "./adminDeletion";
+import { deleteSubjectTransaction } from "./adminStore";
+import type { CrfDraftValues } from "../types/crf";
 import {
   collection,
   doc,
@@ -85,25 +93,29 @@ export async function listAdminSubjects(): Promise<AdminSubjectSummary[]> {
   return snapshot.docs.map(parseSubject);
 }
 
-export async function completeAdminSubject(
+export async function saveAdminSubject(
   subjectId: string,
-  investigations: InvestigationValues,
+  draft: CrfDraftValues,
+  fullEdit: boolean,
 ): Promise<void> {
   if (!db) throw new Error("Firestore unavailable");
+  if (Object.keys(validateSection(investigationSection, draft)).length)
+    throw new Error("Invalid investigations");
+  const investigations = investigationValues(draft);
   await updateDoc(doc(db, "subjects", subjectId), {
     investigations,
-    status: "completed",
+    status: recordStatus(investigations),
     updatedAt: serverTimestamp(),
+    ...(fullEdit ? { publicValues: preparePublicValues(draft) } : {}),
   });
 }
-
-export async function updateAdminSubjectInvestigations(
+export async function deleteAdminSubject(
   subjectId: string,
-  investigations: InvestigationValues,
+  password: string,
 ): Promise<void> {
-  if (!db) throw new Error("Firestore unavailable");
-  await updateDoc(doc(db, "subjects", subjectId), {
-    investigations,
-    updatedAt: serverTimestamp(),
+  const database = db;
+  if (!database) throw new Error("Firestore unavailable");
+  await reauthenticatedDelete(password, reauthenticateAdmin, async () => {
+    await deleteSubjectTransaction(database, subjectId);
   });
 }

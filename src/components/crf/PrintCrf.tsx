@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { getTreatmentDuration } from "./calculations";
 import { useEffect, useRef } from "react";
 import type { CrfField, CrfDraftValues } from "../../types/crf";
@@ -102,7 +103,7 @@ export function PrintCrf({
     }
   }, [preview]);
   if (blocked) return null;
-  return (
+  return createPortal(
     <section
       className={`print-view${preview ? " is-preview" : ""}`}
       aria-label={
@@ -159,6 +160,7 @@ export function PrintCrf({
           </section>
         ))}
       </div>
-    </section>
+    </section>,
+    document.body,
   );
 }

@@ -32,7 +32,9 @@ try {
       "demo-tezform-rules",
       "--config",
       join(directory, "firebase.json"),
-      "node --test --test-concurrency=1 tests/rules/*.test.ts",
+      process.env.GITHUB_ACTIONS === "true"
+        ? "node --test --test-concurrency=1 --test-reporter=spec --test-reporter-destination=stdout --test-reporter=./tests/rules/github-reporter.mjs --test-reporter-destination=stdout tests/rules/*.test.ts"
+        : "node --test --test-concurrency=1 tests/rules/*.test.ts",
     ],
     {
       cwd: root,

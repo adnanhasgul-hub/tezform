@@ -1,9 +1,13 @@
+import {
+  createAdminRecordDraft,
+  investigationState,
+  investigationLabels,
+} from "../services/adminModel";
 import { useMemo, useState } from "react";
 import type { CrfDraftValues, CrfField } from "../types/crf";
 import type { AdminSubjectSummary } from "../services/adminRecords";
 import { PrintCrf } from "./crf/PrintCrf";
 import {
-  createEmptyCrf,
   crfSections,
   getFieldAccessibleLabel,
   isFieldVisible,
@@ -21,24 +25,6 @@ const dateTimeFormatter = new Intl.DateTimeFormat("tr-TR", {
 
 function formatDateTime(value: Date | null) {
   return value ? dateTimeFormatter.format(value) : "—";
-}
-
-export function createAdminRecordDraft(
-  subject: AdminSubjectSummary,
-): CrfDraftValues {
-  const values = createEmptyCrf();
-  Object.assign(values, subject.publicValues, subject.investigations);
-  values.treatmentDurationYears =
-    subject.publicValues.treatmentDurationYears === null
-      ? ""
-      : String(subject.publicValues.treatmentDurationYears);
-  values.treatmentDurationMonths =
-    subject.publicValues.treatmentDurationMonths === null
-      ? ""
-      : String(subject.publicValues.treatmentDurationMonths);
-  values.treatmentDurationTotalMonths =
-    subject.publicValues.treatmentDurationTotalMonths;
-  return values;
 }
 
 function formatAnswer(field: CrfField, values: CrfDraftValues): string {
@@ -76,7 +62,11 @@ export function AdminSubjectDetail({ subject, onBack }: Props) {
           <p className="eyebrow">{subject.subjectCode} · TAM KAYIT</p>
           <h2 id="admin-detail-title">Hasta CRF Ayrıntıları</h2>
         </div>
-        <span className="admin-status admin-status-completed">Tamamlandı</span>
+        <span
+          className={`admin-status admin-status-${investigationState(subject.investigations)}`}
+        >
+          {investigationLabels[investigationState(subject.investigations)]}
+        </span>
       </div>
 
       <div className="admin-detail-meta" aria-label="Kayıt bilgileri">
@@ -118,7 +108,9 @@ export function AdminSubjectDetail({ subject, onBack }: Props) {
                     key={field.id}
                     className={`admin-detail-field${field.kind === "textarea" ? " admin-detail-field-wide" : ""}`}
                   >
-                    {field.group && <dt className="admin-detail-group">{field.group}</dt>}
+                    {field.group && (
+                      <dt className="admin-detail-group">{field.group}</dt>
+                    )}
                     <dt>{getFieldAccessibleLabel(field)}</dt>
                     <dd>
                       {formatAnswer(field, values)}
