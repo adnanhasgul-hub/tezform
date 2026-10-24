@@ -104,6 +104,47 @@ service cloud.firestore {
         && data.investigations is map && data.investigations.size() == 0
         && validPublic(data.publicValues);
     }
+    function shortText(value) {
+      return value is string && value.size() <= 32;
+    }
+    function validInvestigations(data) {
+      return data is map
+        && data.keys().hasAll(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
+        && data.keys().hasOnly(['dvtLocations', 'dvtSide', 'bun', 'creatinine', 'egfr', 'calcium', 'sodium', 'potassium', 'totalBilirubin', 'directBilirubin', 'ast', 'alt', 'totalProtein', 'albumin', 'wbc', 'hemoglobin', 'platelets', 'hct', 'pt', 'inr', 'aptt'])
+        && data.dvtLocations is list
+        && data.dvtLocations.toSet().size() == data.dvtLocations.size()
+        && data.dvtLocations.hasOnly(['İliak', 'Femoral', 'Popliteal', 'Üst Ekstremite', 'IVC', 'SVC', 'Juguler'])
+        && data.dvtSide is list
+        && data.dvtSide.toSet().size() == data.dvtSide.size()
+        && data.dvtSide.hasOnly(['Sağ', 'Sol'])
+        && shortText(data.bun)
+        && shortText(data.creatinine)
+        && shortText(data.egfr)
+        && shortText(data.calcium)
+        && shortText(data.sodium)
+        && shortText(data.potassium)
+        && shortText(data.totalBilirubin)
+        && shortText(data.directBilirubin)
+        && shortText(data.ast)
+        && shortText(data.alt)
+        && shortText(data.totalProtein)
+        && shortText(data.albumin)
+        && shortText(data.wbc)
+        && shortText(data.hemoglobin)
+        && shortText(data.platelets)
+        && shortText(data.hct)
+        && shortText(data.pt)
+        && shortText(data.inr)
+        && shortText(data.aptt);
+    }
+    function validAdminCompletion(before, after) {
+      return admin()
+        && before.status == 'pending_completion'
+        && after.status == 'completed'
+        && after.diff(before).affectedKeys().hasOnly(['status', 'updatedAt', 'investigations'])
+        && after.updatedAt == request.time
+        && validInvestigations(after.investigations);
+    }
     function validReceipt(data, requestId) {
       return data.keys().hasAll(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
         && data.keys().hasOnly(['subjectId', 'subjectCode', 'subjectNumber', 'requestId'])
@@ -141,8 +182,8 @@ service cloud.firestore {
       allow get, list: if admin();
       allow create: if anonymous() && subjectId(id) && validSubject(request.resource.data)
         && allocation(id, request.resource.data.requestId, request.resource.data.subjectNumber);
-      // Editing/completion is intentionally not enabled in this phase.
-      allow update, delete: if false;
+      allow update: if validAdminCompletion(resource.data, request.resource.data);
+      allow delete: if false;
     }
     match /submissionRequests/{uid}/requests/{id} {
       allow get: if anonymous() && request.auth.uid == uid;
