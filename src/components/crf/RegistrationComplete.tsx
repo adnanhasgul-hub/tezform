@@ -93,7 +93,12 @@ export function RegistrationComplete({
             <p id="code-instruction">
               Bu kod hastanın çalışma kodudur.
               <br />
-              Lütfen kodu kaydetmeden bu ekranı kapatmayın.
+              Hastaya ait mor (EDTA) tüpü bu kodla etiketleyin. Kodu tüpün
+              üzerine okunaklı şekilde yazın veya aynı koda ait hazır barkodu
+              tüpe yapıştırın.
+              <br />
+              İşlemi tamamlamadan önce tüp üzerindeki kodun ekranda görünen
+              hasta koduyla aynı olduğundan mutlaka emin olun.
             </p>
             <p role="status">{copyState}</p>
             <div className="completion-actions">

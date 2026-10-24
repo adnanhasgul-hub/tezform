@@ -3,6 +3,9 @@ import { useEffect, useRef } from "react";
 import type { CrfField, CrfDraftValues } from "../../types/crf";
 import { crfSections, formCopy, getFieldAccessibleLabel } from "./sections";
 
+const FORM_TITLE =
+  "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu";
+
 function PrintField({
   field,
   values,
@@ -122,9 +125,8 @@ export function PrintCrf({
       <div className="print-sheet">
         <header className="print-header">
           <h1 ref={titleRef} tabIndex={-1}>
-            {formCopy.title}
+            {FORM_TITLE}
           </h1>
-          <p className="clinical-copy">{formCopy.subtitle}</p>
           <p className="print-warning">
             <strong>{formCopy.warning}</strong>
           </p>
