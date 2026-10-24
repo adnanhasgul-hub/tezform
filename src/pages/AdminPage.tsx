@@ -1,5 +1,9 @@
 import { createAdminRecordDraft } from "../services/adminModel";
 import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
+import { AdminRowActions } from "../components/AdminRowActions";
+import { ResearchDataCenter } from "../components/ResearchDataCenter";
+import { ResearchExports } from "../components/ResearchExports";
+import { SpssDictionary } from "../components/SpssDictionary";
 import {
   investigationState,
   investigationLabels,
@@ -56,6 +60,8 @@ export function AdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selection, setSelection] = useState<RecordSelection | null>(null);
+  const [researchCenterOpen, setResearchCenterOpen] = useState(false);
+  const [dictionaryOpen, setDictionaryOpen] = useState(false);
 
   const refreshSubjects = useCallback(async () => {
     setLoadingSubjects(true);
@@ -79,6 +85,8 @@ export function AdminPage() {
         else {
           setSubjects([]);
           setSelection(null);
+          setResearchCenterOpen(false);
+          setDictionaryOpen(false);
         }
       }),
     [refreshSubjects],
@@ -177,6 +185,32 @@ export function AdminPage() {
             <h1>Yönetici Paneli</h1>
           </div>
           <div className="admin-topbar-actions">
+            <button
+              type="button"
+              className="button secondary"
+              aria-current={researchCenterOpen ? "page" : undefined}
+              onClick={() => {
+                setSelection(null);
+                setDictionaryOpen(false);
+                setResearchCenterOpen((previous) => !previous);
+              }}
+            >
+              {researchCenterOpen
+                ? "Yönetici Paneli"
+                : "Araştırma Veri Merkezi"}
+            </button>
+            {researchCenterOpen && !dictionaryOpen && (
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => {
+                  setSelection(null);
+                  setDictionaryOpen(true);
+                }}
+              >
+                SPSS Veri Sözlüğü
+              </button>
+            )}
             <a className="button secondary" href="/">
               Forma Dön
             </a>
@@ -192,7 +226,27 @@ export function AdminPage() {
         </header>
 
         <main className="admin-dashboard">
-          {selection && selectedSubject ? (
+          {researchCenterOpen && (
+            <div hidden={Boolean(selection) || dictionaryOpen}>
+              <ResearchDataCenter
+                subjects={subjects}
+                loading={loadingSubjects}
+                error={subjectsError}
+                onRefresh={() => void refreshSubjects()}
+                onBack={() => {
+                  setSelection(null);
+                  setResearchCenterOpen(false);
+                }}
+                onView={(id) => setSelection({ id, mode: "view" })}
+                renderExports={(records, scope) => (
+                  <ResearchExports records={records} scope={scope} />
+                )}
+              />
+            </div>
+          )}
+          {dictionaryOpen ? (
+            <SpssDictionary onBack={() => setDictionaryOpen(false)} />
+          ) : selection && selectedSubject ? (
             selection.mode === "delete" ? (
               <AdminDeleteDialog
                 subject={selectedSubject}
@@ -225,23 +279,23 @@ export function AdminPage() {
                 onCompleted={() => handleInvestigationSaved(selectedSubject.id)}
               />
             )
-          ) : (
+          ) : researchCenterOpen ? null : (
             <>
               <section className="admin-stats" aria-label="Kayıt özeti">
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-total">
                   <span>Toplam Hasta</span>
                   <strong>{counts.total}</strong>
                 </article>
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-empty">
                   <span>Boş</span>
                   <strong>{counts.empty}</strong>
                 </article>
-                <article className="admin-stat-card">
+                <article className="admin-stat-card admin-stat-partial">
                   <span>Devam Et</span>
                   <strong>{counts.partial}</strong>
                 </article>
-                <article className="admin-stat-card">
-                  <span>Tamamlanan</span>
+                <article className="admin-stat-card admin-stat-complete">
+                  <span>Tamamlandı</span>
                   <strong>{counts.completed}</strong>
                 </article>
               </section>
@@ -333,64 +387,13 @@ export function AdminPage() {
                             </span>
                           </td>
                           <td>
-                            <div className="admin-action-group">
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({ id: subject.id, mode: "edit" })
-                                }
-                              >
-                                {investigationState(subject.investigations) ===
-                                "empty"
-                                  ? "Formu Tamamla"
-                                  : investigationState(
-                                        subject.investigations,
-                                      ) === "partial"
-                                    ? "Devam Et"
-                                    : "Bölüm 4 Düzenle"}
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "full-edit",
-                                  })
-                                }
-                              >
-                                Tüm Formu Düzenle
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({ id: subject.id, mode: "view" })
-                                }
-                              >
-                                Görüntüle
-                              </button>
-                              <button
-                                className="button secondary admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "print",
-                                  })
-                                }
-                              >
-                                Yazdır
-                              </button>
-                              <button
-                                className="button danger admin-action-button"
-                                onClick={() =>
-                                  setSelection({
-                                    id: subject.id,
-                                    mode: "delete",
-                                  })
-                                }
-                              >
-                                Sil
-                              </button>
-                            </div>
+                            <AdminRowActions
+                              subjectCode={subject.subjectCode}
+                              state={investigationState(subject.investigations)}
+                              onAction={(mode) =>
+                                setSelection({ id: subject.id, mode })
+                              }
+                            />
                           </td>
                         </tr>
                       ))}

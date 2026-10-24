@@ -1,4 +1,5 @@
 import { checkAdmin } from "./admin.mjs";
+import { checkDvt } from "./dvt.mjs";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -297,7 +298,7 @@ try {
   assert.equal(await page.evaluate(() => window.uiState.calls), 2);
   assert.equal(await page.evaluate(() => window.uiState.prints), 2);
   assert((await page.locator(".print-sheet").innerText()).includes("UI-DEMO"));
-  assert.equal(await page.locator("[data-print-field]").count(), 70);
+  assert.equal(await page.locator("[data-print-field]").count(), 71);
   await page.emulateMedia({ media: "print" });
   await page.pdf({
     path: "/tmp/tezform-spark-filled.pdf",
@@ -350,7 +351,7 @@ try {
       ),
     true,
   );
-  assert.equal(await page.locator("[data-print-field]").count(), 70);
+  assert.equal(await page.locator("[data-print-field]").count(), 71);
   await page.emulateMedia({ media: "print" });
   await page.pdf({
     path: "/tmp/tezform-spark-blank.pdf",
@@ -500,6 +501,7 @@ try {
                   ? "3"
                   : "UI-DEMO";
     }
+    values.dvtSide = ["Sağ", "Sol"];
     values.weight = "80";
     values.height = "180";
     values.treatmentDurationYears = "3";
@@ -521,7 +523,7 @@ try {
     .locator(".print-subject-code")
     .filter({ hasText: "AHT-TEST" })
     .waitFor();
-  assert.equal(await page.locator("[data-print-field]").count(), 70);
+  assert.equal(await page.locator("[data-print-field]").count(), 71);
   assert(
     (await page.locator(".print-sheet").innerText()).includes(
       "3 yıl 4 ay (40 ay)",
@@ -545,9 +547,10 @@ try {
     preferCSSPageSize: true,
   });
   console.log(
-    "PASS all 70 fields stress print with synthetic data; duration total included; no allocation performed",
+    "PASS all 71 fields stress print with synthetic data; duration total included; no allocation performed",
   );
   await checkAdmin(browser, origin);
+  await checkDvt(browser, origin);
 } finally {
   await browser?.close();
   vite.kill("SIGTERM");

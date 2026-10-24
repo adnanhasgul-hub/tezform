@@ -10,8 +10,10 @@ import { PrintCrf } from "./crf/PrintCrf";
 import {
   crfSections,
   getFieldAccessibleLabel,
-  isFieldVisible,
+  getFieldForDisplay,
 } from "./crf/sections";
+
+import { legacyDvtMessage } from "../services/dvtModel";
 
 interface Props {
   subject: AdminSubjectSummary;
@@ -89,6 +91,14 @@ export function AdminSubjectDetail({ subject, onBack }: Props) {
         5, 6 ve 7 hasta formundan; Bölüm 4 yönetici tamamlama ekranından gelir.
       </p>
 
+      {values.legacyDvtLocations?.length ? (
+        <div className="save-error" role="note">
+          <p>{legacyDvtMessage(values.dvtSide)}</p>
+          <p>
+            Eski ortak lokalizasyonlar: {values.legacyDvtLocations.join(", ")}
+          </p>
+        </div>
+      ) : null}
       <div className="admin-detail-sections">
         {crfSections.map((section) => (
           <section
@@ -101,8 +111,9 @@ export function AdminSubjectDetail({ subject, onBack }: Props) {
               <h3 id={`admin-detail-section-${section.id}`}>{section.title}</h3>
             </div>
             <dl className="admin-detail-grid">
-              {section.fields.map((field) => {
-                if (field.when && !isFieldVisible(field, values)) return null;
+              {section.fields.map((source) => {
+                const field = getFieldForDisplay(source, values);
+                if (!field) return null;
                 return (
                   <div
                     key={field.id}

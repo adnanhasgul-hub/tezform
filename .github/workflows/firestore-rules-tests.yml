@@ -3,7 +3,7 @@ name: Firestore Rules Tests (Emulator)
 on:
   workflow_dispatch:
   push:
-    branches: [rules-test, admin-record-management, hotfix/monotonic-aht]
+    branches: [rules-test, admin-record-management, hotfix/monotonic-aht, feature/research-data-center-spss]
 
 permissions:
   contents: read

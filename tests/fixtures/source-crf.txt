@@ -68,7 +68,10 @@ Hiçbiri
 
 BÖLÜM 4: Radyoloji Bulguları ve Detaylı Laboratuvar Parametreleri
 (Formu Tamamla)
-1. Radyoloji Bulguları (DVT Seviyesi):
+1. DVT Tarafı:
+Sağ
+Sol
+2A. Sağ DVT Lokalizasyonu
 İliak
 Femoral
 Popliteal
@@ -76,9 +79,14 @@ Popliteal
 IVC
 SVC
 Juguler
-2. DVT Tarafı:
-Sağ
-Sol
+2B. Sol DVT Lokalizasyonu
+İliak
+Femoral
+Popliteal
+Üst Ekstremite
+IVC
+SVC
+Juguler
 3. Detaylı Laboratuvar Parametreleri
 (19 Parametre Taraması):
 BUN:

@@ -15,6 +15,16 @@ export const formCopy = {
   warning: "* ÖNEMLİ KLİNİK UYARI: HASTADAN MOR TÜP (EDTA) KAN ALINACAKTIR *",
 } as const;
 
+export const dvtLocationOptions = [
+  "İliak",
+  "Femoral",
+  "Popliteal",
+  "Üst Ekstremite",
+  "IVC",
+  "SVC",
+  "Juguler",
+] as const;
+
 export const crfSections: readonly CrfSection[] = [
   {
     id: "demographics",
@@ -235,26 +245,27 @@ export const crfSections: readonly CrfSection[] = [
     entryRole: "admin",
     fields: [
       {
-        id: "dvtLocations",
-        label: "1. Radyoloji Bulguları (DVT Seviyesi):",
-        kind: "multiselect",
-        required: false,
-        options: [
-          "İliak",
-          "Femoral",
-          "Popliteal",
-          "Üst Ekstremite",
-          "IVC",
-          "SVC",
-          "Juguler",
-        ],
-      },
-      {
         id: "dvtSide",
-        label: "2. DVT Tarafı:",
+        label: "1. DVT Tarafı:",
         kind: "multiselect",
         required: false,
         options: ["Sağ", "Sol"],
+      },
+      {
+        id: "dvtRightLocations",
+        label: "2A. Sağ DVT Lokalizasyonu",
+        kind: "multiselect",
+        required: false,
+        when: { fieldId: "dvtSide", value: "Sağ" },
+        options: dvtLocationOptions,
+      },
+      {
+        id: "dvtLeftLocations",
+        label: "2B. Sol DVT Lokalizasyonu",
+        kind: "multiselect",
+        required: false,
+        when: { fieldId: "dvtSide", value: "Sol" },
+        options: dvtLocationOptions,
       },
       {
         id: "bun",
@@ -729,4 +740,27 @@ export function getFieldAccessibleLabel(
     .flatMap((section) => section.fields)
     .find((item) => item.id === field.when?.fieldId);
   return `${parent?.label ?? ""} ${field.when?.value ?? ""}`.trim();
+}
+
+/** One metadata presentation rule for digital, detail and manual paper surfaces. */
+export function getFieldForDisplay(
+  field: CrfSection["fields"][number],
+  values?: CrfDraftValues,
+  context: "digital" | "print" = "digital",
+): CrfSection["fields"][number] | null {
+  const dvtLocation =
+    field.id === "dvtRightLocations" || field.id === "dvtLeftLocations";
+  if (!dvtLocation)
+    return context === "print" || !values || isFieldVisible(field, values)
+      ? field
+      : null;
+  const sides = values?.dvtSide ?? [];
+  const blankPaper = context === "print" && sides.length === 0;
+  if (!blankPaper && (!values || !isFieldVisible(field, values))) return null;
+  const bilateral = sides.includes("Sağ") && sides.includes("Sol");
+  const right = field.id === "dvtRightLocations";
+  return {
+    ...field,
+    label: `${bilateral || blankPaper ? (right ? "2A" : "2B") : "2"}. ${right ? "Sağ" : "Sol"} DVT Lokalizasyonu`,
+  };
 }

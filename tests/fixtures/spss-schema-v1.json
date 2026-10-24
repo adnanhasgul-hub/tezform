@@ -1,0 +1,1694 @@
+[
+  {
+    "name": "subject_code",
+    "sourceField": "subjectCode",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "subject_number",
+    "sourceField": "subjectNumber",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "national_id",
+    "sourceField": "nationalId",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "protocol_date",
+    "sourceField": "protocolDate",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "sex",
+    "sourceField": "sex",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Kadın"
+      },
+      {
+        "value": 2,
+        "label": "Erkek"
+      }
+    ]
+  },
+  {
+    "name": "age",
+    "sourceField": "age",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "weight",
+    "sourceField": "weight",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "kg",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "height",
+    "sourceField": "height",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "cm",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "bmi",
+    "sourceField": "bmi",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "kg/m²",
+    "transformation": "derived",
+    "derivedFrom": [
+      "weight",
+      "height"
+    ],
+    "valueLabels": []
+  },
+  {
+    "name": "indication",
+    "sourceField": "indication",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Atriyal Fibrilasyon (AF) (İnme / sistemik emboli önlenmesi)"
+      },
+      {
+        "value": 2,
+        "label": "Derin Ven Trombozu (DVT) veya Akciğer Embolisi (PE) tedavisi / önlenmesi"
+      },
+      {
+        "value": 3,
+        "label": "Ortopedik cerrahi sonrası tromboz koruması"
+      },
+      {
+        "value": 4,
+        "label": "Diğer:"
+      }
+    ]
+  },
+  {
+    "name": "indication_other",
+    "sourceField": "indicationOther",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "daily_dose",
+    "sourceField": "dailyDose",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Günde 2 kez 2.5 mg"
+      },
+      {
+        "value": 2,
+        "label": "Günde 2 kez 5 mg"
+      },
+      {
+        "value": 3,
+        "label": "Diğer:"
+      }
+    ]
+  },
+  {
+    "name": "daily_dose_other",
+    "sourceField": "dailyDoseOther",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "treatment_duration_years",
+    "sourceField": "treatmentDurationYears",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "treatment_duration_months",
+    "sourceField": "treatmentDurationMonths",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "adherence",
+    "sourceField": "adherence",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Her gün zamanında"
+      },
+      {
+        "value": 2,
+        "label": "Haftada 1-2 doz unutuyor"
+      },
+      {
+        "value": 3,
+        "label": "Sık sık doz atlıyor"
+      }
+    ]
+  },
+  {
+    "name": "last_dose_time",
+    "sourceField": "lastDoseTime",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "other_antithrombotic_no",
+    "sourceField": "otherAntithrombotic",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Hayır",
+    "derivedFrom": [
+      "otherAntithrombotic"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "other_antithrombotic_aspirin",
+    "sourceField": "otherAntithrombotic",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Aspirin",
+    "derivedFrom": [
+      "otherAntithrombotic"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "other_antithrombotic_clopidogrel_ticagrelor",
+    "sourceField": "otherAntithrombotic",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Klopidogrel / Tikagrelor",
+    "derivedFrom": [
+      "otherAntithrombotic"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "other_antithrombotic_heparin",
+    "sourceField": "otherAntithrombotic",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Heparin",
+    "derivedFrom": [
+      "otherAntithrombotic"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "nsaid",
+    "sourceField": "nsaid",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "nsaid_frequency",
+    "sourceField": "nsaidFrequency",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Düzenli"
+      },
+      {
+        "value": 2,
+        "label": "Seyrek"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_amiodarone",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Amiodaron",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_verapamil",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Verapamil",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_diltiazem",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Diltiazem",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_ketoconazole_itraconazole",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Ketokonazol / Itrakonazol",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_clarithromycin",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Klaritromisin",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inhibitors_none",
+    "sourceField": "inhibitors",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Hiçbiri",
+    "derivedFrom": [
+      "inhibitors"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inducers_rifampicin",
+    "sourceField": "inducers",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Rifampisin",
+    "derivedFrom": [
+      "inducers"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inducers_carbamazepine",
+    "sourceField": "inducers",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Karbamazepin",
+    "derivedFrom": [
+      "inducers"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inducers_phenytoin",
+    "sourceField": "inducers",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Fenitoin",
+    "derivedFrom": [
+      "inducers"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inducers_st_johns_wort",
+    "sourceField": "inducers",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Sarı Kantaron (St. John's Wort)",
+    "derivedFrom": [
+      "inducers"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "inducers_none",
+    "sourceField": "inducers",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Hiçbiri",
+    "derivedFrom": [
+      "inducers"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_side_right",
+    "sourceField": "dvtSide",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Sağ",
+    "derivedFrom": [
+      "dvtSide"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_side_left",
+    "sourceField": "dvtSide",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Sol",
+    "derivedFrom": [
+      "dvtSide"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_iliac",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "İliak",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_femoral",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Femoral",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_popliteal",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Popliteal",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_upper_extremity",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Üst Ekstremite",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_ivc",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "IVC",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_svc",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "SVC",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_right_locations_jugular",
+    "sourceField": "dvtRightLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Juguler",
+    "derivedFrom": [
+      "dvtRightLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_iliac",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "İliak",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_femoral",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Femoral",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_popliteal",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Popliteal",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_upper_extremity",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Üst Ekstremite",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_ivc",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "IVC",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_svc",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "SVC",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "dvt_left_locations_jugular",
+    "sourceField": "dvtLeftLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "binary",
+    "option": "Juguler",
+    "derivedFrom": [
+      "dvtLeftLocations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "bun",
+    "sourceField": "bun",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mg/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "creatinine",
+    "sourceField": "creatinine",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mg/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "egfr",
+    "sourceField": "egfr",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mL/dk",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "calcium",
+    "sourceField": "calcium",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mg/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "sodium",
+    "sourceField": "sodium",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mEq/L",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "potassium",
+    "sourceField": "potassium",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mEq/L",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "total_bilirubin",
+    "sourceField": "totalBilirubin",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mg/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "direct_bilirubin",
+    "sourceField": "directBilirubin",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "mg/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "ast",
+    "sourceField": "ast",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "U/L",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "alt",
+    "sourceField": "alt",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "U/L",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "total_protein",
+    "sourceField": "totalProtein",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "g/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "albumin",
+    "sourceField": "albumin",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "g/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "wbc",
+    "sourceField": "wbc",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "K/uL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "hemoglobin",
+    "sourceField": "hemoglobin",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "g/dL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "platelets",
+    "sourceField": "platelets",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "K/uL",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "hct",
+    "sourceField": "hct",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "%",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "pt",
+    "sourceField": "pt",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "sn",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "inr",
+    "sourceField": "inr",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "aptt",
+    "sourceField": "aptt",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "sn",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "bruising",
+    "sourceField": "bruising",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "bruising_size",
+    "sourceField": "bruisingSize",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Küçük <2 cm"
+      },
+      {
+        "value": 2,
+        "label": "Geniş >5 cm"
+      }
+    ]
+  },
+  {
+    "name": "gingival_bleeding",
+    "sourceField": "gingivalBleeding",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "gingival_duration",
+    "sourceField": "gingivalDuration",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "<5 dakika"
+      },
+      {
+        "value": 2,
+        "label": ">5 dakika / Zor duruyor"
+      }
+    ]
+  },
+  {
+    "name": "epistaxis",
+    "sourceField": "epistaxis",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "epistaxis_frequency",
+    "sourceField": "epistaxisFrequency",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Ayda 1-2"
+      },
+      {
+        "value": 2,
+        "label": "Haftalık"
+      }
+    ]
+  },
+  {
+    "name": "epistaxis_duration",
+    "sourceField": "epistaxisDuration",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "<10 dk"
+      },
+      {
+        "value": 2,
+        "label": ">10 dk"
+      }
+    ]
+  },
+  {
+    "name": "cut_bleeding",
+    "sourceField": "cutBleeding",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "melena",
+    "sourceField": "melena",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet (Gastrointestinal kanama şüphesi)"
+      }
+    ]
+  },
+  {
+    "name": "hematochezia",
+    "sourceField": "hematochezia",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "hematemesis",
+    "sourceField": "hematemesis",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "hematuria",
+    "sourceField": "hematuria",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "menorrhagia",
+    "sourceField": "menorrhagia",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      },
+      {
+        "value": 2,
+        "label": "Menopozda / Uygulanamaz"
+      }
+    ]
+  },
+  {
+    "name": "headache",
+    "sourceField": "headache",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet (Acil intrakraniyal kanama şüphesi)"
+      }
+    ]
+  },
+  {
+    "name": "neurological_symptoms",
+    "sourceField": "neurologicalSymptoms",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "hemarthrosis",
+    "sourceField": "hemarthrosis",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "hemoptysis",
+    "sourceField": "hemoptysis",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "subconjunctival_bleeding",
+    "sourceField": "subconjunctivalBleeding",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "healthcare_visit",
+    "sourceField": "healthcareVisit",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "healthcare_visit_type",
+    "sourceField": "healthcareVisitType",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Poliklinik"
+      },
+      {
+        "value": 2,
+        "label": "Acil"
+      },
+      {
+        "value": 3,
+        "label": "Yatış"
+      }
+    ]
+  },
+  {
+    "name": "transfusion",
+    "sourceField": "transfusion",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "transfusion_units",
+    "sourceField": "transfusionUnits",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "ünite",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "treatment_interruption",
+    "sourceField": "treatmentInterruption",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet ->"
+      }
+    ]
+  },
+  {
+    "name": "interruption_days",
+    "sourceField": "interruptionDays",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "gün",
+    "transformation": "number",
+    "valueLabels": []
+  },
+  {
+    "name": "hemoglobin_drop",
+    "sourceField": "hemoglobinDrop",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      },
+      {
+        "value": 2,
+        "label": "Bilinmiyor"
+      }
+    ]
+  },
+  {
+    "name": "bleeding_onset_interval",
+    "sourceField": "bleedingOnsetInterval",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "bleeding_day_dose",
+    "sourceField": "bleedingDayDose",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Zamanında tam doz aldım"
+      },
+      {
+        "value": 2,
+        "label": "Çift doz almıştım"
+      },
+      {
+        "value": 3,
+        "label": "İlaçtan hemen sonra kanadı"
+      },
+      {
+        "value": 4,
+        "label": "Kanama olmadı / Uygulanamaz"
+      }
+    ]
+  },
+  {
+    "name": "research_notes",
+    "sourceField": "researchNotes",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "text",
+    "valueLabels": []
+  },
+  {
+    "name": "investigator_name",
+    "sourceField": "investigatorName",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "category",
+    "valueLabels": [
+      {
+        "value": 1,
+        "label": "Dr. Mehmet"
+      },
+      {
+        "value": 2,
+        "label": "Dr. Yasin"
+      },
+      {
+        "value": 3,
+        "label": "Dr. Tuncay"
+      },
+      {
+        "value": 4,
+        "label": "Dr. Burak"
+      },
+      {
+        "value": 5,
+        "label": "Dr. Adnan"
+      },
+      {
+        "value": 6,
+        "label": "Dr. Rabia"
+      }
+    ]
+  },
+  {
+    "name": "treatment_duration_total_months",
+    "sourceField": "treatmentDurationTotalMonths",
+    "dataType": "numeric",
+    "measurementLevel": "scale",
+    "unit": "ay",
+    "transformation": "derived",
+    "derivedFrom": [
+      "treatmentDurationYears",
+      "treatmentDurationMonths"
+    ],
+    "valueLabels": []
+  },
+  {
+    "name": "record_state",
+    "sourceField": "investigations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "derived",
+    "derivedFrom": [
+      "investigations"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Boş"
+      },
+      {
+        "value": 1,
+        "label": "Devam Et"
+      },
+      {
+        "value": 2,
+        "label": "Tamamlandı"
+      }
+    ]
+  },
+  {
+    "name": "legacy_dvt_unresolved",
+    "sourceField": "dvtLocations",
+    "dataType": "numeric",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "derived",
+    "derivedFrom": [
+      "dvtLocations",
+      "dvtSide"
+    ],
+    "valueLabels": [
+      {
+        "value": 0,
+        "label": "Hayır"
+      },
+      {
+        "value": 1,
+        "label": "Evet"
+      }
+    ]
+  },
+  {
+    "name": "legacy_dvt_shared_locations",
+    "sourceField": "dvtLocations",
+    "dataType": "string",
+    "measurementLevel": "nominal",
+    "unit": "",
+    "transformation": "derived",
+    "derivedFrom": [
+      "dvtLocations"
+    ],
+    "valueLabels": []
+  }
+]

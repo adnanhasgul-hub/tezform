@@ -142,9 +142,10 @@ function fullInvestigations() {
     if (field.kind === "multiselect") values[field.id] = [field.options[0]!];
     else
       values[
-        field.id as Exclude<keyof typeof values, "dvtSide" | "dvtLocations">
+        field.id as Exclude<keyof typeof values, "dvtSide" | "dvtRightLocations" | "dvtLeftLocations">
       ] = "1";
   }
+  values.dvtSide = ["Sağ", "Sol"];
   return values;
 }
 test("partial Section 4 saves retain values and correctly transition complete -> partial -> empty", async () => {

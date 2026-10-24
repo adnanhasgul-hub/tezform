@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import type { CrfValue, FieldId } from "../types/crf";
-import { crfSections, isFieldVisible } from "./crf/sections";
+import { crfSections, getFieldForDisplay } from "./crf/sections";
 import { FormField } from "./crf/FormField";
 import { recalculateDerived } from "./crf/calculations";
 import { validateSection } from "./crf/validation";
@@ -14,6 +14,12 @@ import {
   investigationState,
   investigationLabels,
 } from "../services/adminModel";
+import {
+  ambiguousLegacyLocations,
+  clearInactiveDvt,
+  legacyDvtMessage,
+  resolvedDvt,
+} from "../services/dvtModel";
 interface Props {
   subject: AdminSubjectSummary;
   onBack: () => void;
@@ -29,20 +35,38 @@ export function AdminInvestigationForm({
   saveRecord = saveAdminSubject,
 }: Props) {
   const [values, setValues] = useState(() => createAdminRecordDraft(subject));
+  const [legacyConfirmed, setLegacyConfirmed] = useState(false);
+  const legacyLocations = ambiguousLegacyLocations(subject.investigations);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldId, string>>>({});
   const [error, setError] = useState("");
   const sections = fullEdit
     ? crfSections
     : crfSections.filter((section) => section.entryRole === "admin");
-  const state = investigationState(investigationValues(values));
+  const state = legacyLocations.length && (!legacyConfirmed || !resolvedDvt(values))
+    ? "partial"
+    : investigationState(investigationValues(values));
   function update(id: FieldId, value: CrfValue) {
-    setValues((previous) => recalculateDerived({ ...previous, [id]: value }));
+    if (
+      id === "dvtSide" ||
+      id === "dvtRightLocations" ||
+      id === "dvtLeftLocations"
+    )
+      setLegacyConfirmed(false);
+    setValues((previous) =>
+      clearInactiveDvt(recalculateDerived({ ...previous, [id]: value })),
+    );
     setErrors((previous) => ({ ...previous, [id]: undefined }));
     setError("");
   }
   async function save(exit = false) {
     if (busy) return;
+    if (legacyLocations.length && (!legacyConfirmed || !resolvedDvt(values))) {
+      setError(
+        "Eski ortak lokalizasyonları inceleyip seçili tarafların lokalizasyonlarını ayrı ayrı doğrulayınız.",
+      );
+      return;
+    }
     const invalid = Object.assign(
       {},
       ...sections.map((section) => validateSection(section, values)),
@@ -83,6 +107,21 @@ export function AdminInvestigationForm({
           edebilirsiniz.
         </p>
       )}
+      {legacyLocations.length > 0 && (
+        <div className="save-error" role="alert">
+          <p>{legacyDvtMessage(subject.investigations.dvtSide ?? [])}</p>
+          <p>Eski ortak lokalizasyonlar: {legacyLocations.join(", ")}</p>
+          <label>
+            <input
+              type="checkbox"
+              checked={legacyConfirmed}
+              disabled={busy}
+              onChange={(event) => setLegacyConfirmed(event.target.checked)}
+            />
+            Sağ ve Sol lokalizasyonlarını ayrı ayrı doğruladım.
+          </label>
+        </div>
+      )}
       <form
         noValidate
         autoComplete="off"
@@ -96,26 +135,29 @@ export function AdminInvestigationForm({
             <section key={section.id} className="admin-detail-section">
               <h3>{section.title}</h3>
               <div className="field-grid">
-                {section.fields.map((field) =>
-                  !isFieldVisible(field, values) ? null : (
-                    <Fragment key={field.id}>
-                      {field.group && (
-                        <h4 className="clinical-group-heading full-width">
-                          {field.group}
-                        </h4>
-                      )}
-                      <div className="question-card">
-                        <FormField
-                          field={field}
-                          value={values[field.id]}
-                          error={errors[field.id]}
-                          onBlur={() => undefined}
-                          onChange={(value) => update(field.id, value)}
-                        />
-                      </div>
-                    </Fragment>
-                  ),
-                )}
+                {section.fields.flatMap((source) => {
+                  const field = getFieldForDisplay(source, values);
+                  return !field
+                    ? []
+                    : [
+                        <Fragment key={field.id}>
+                          {field.group && (
+                            <h4 className="clinical-group-heading full-width">
+                              {field.group}
+                            </h4>
+                          )}
+                          <div className="question-card">
+                            <FormField
+                              field={field}
+                              value={values[field.id]}
+                              error={errors[field.id]}
+                              onBlur={() => undefined}
+                              onChange={(value) => update(field.id, value)}
+                            />
+                          </div>
+                        </Fragment>,
+                      ];
+                })}
               </div>
             </section>
           ))}
