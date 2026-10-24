@@ -166,10 +166,6 @@ try {
     window.print = () => {
       state.prints++;
     };
-    async function persist(id, draft, full) {
-      state.saved = { id, draft, full };
-      subject.investigations = { bun: draft.bun };
-    }
     function Harness() {
       const [record, setRecord] = React.useState(null),
         [ack, setAck] = React.useState(false),
@@ -412,6 +408,10 @@ try {
       investigations: {},
     };
     const state = (window.adminTest = { saved: null, deletes: 0 });
+    async function persist(id, draft, full) {
+      state.saved = { id, draft, full };
+      subject.investigations = { bun: draft.bun };
+    }
     function Harness() {
       const [generation, setGeneration] = React.useState(0);
       const [deleting, setDeleting] = React.useState(false);
