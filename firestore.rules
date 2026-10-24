@@ -34,7 +34,12 @@ service cloud.firestore {
     function validPublic(data) {
       return data is map
         && data.keys().hasAll(["nationalId", "protocolDate", "sex", "age", "weight", "height", "bmi", "indication", "indicationOther", "dailyDose", "dailyDoseOther", "treatmentDurationYears", "treatmentDurationMonths", "adherence", "lastDoseTime", "otherAntithrombotic", "nsaid", "nsaidFrequency", "inhibitors", "inducers", "bruising", "bruisingSize", "gingivalBleeding", "gingivalDuration", "epistaxis", "epistaxisFrequency", "epistaxisDuration", "cutBleeding", "melena", "hematochezia", "hematemesis", "hematuria", "menorrhagia", "headache", "neurologicalSymptoms", "hemarthrosis", "hemoptysis", "subconjunctivalBleeding", "healthcareVisit", "healthcareVisitType", "transfusion", "transfusionUnits", "treatmentInterruption", "interruptionDays", "hemoglobinDrop", "bleedingOnsetInterval", "bleedingDayDose", "researchNotes", "investigatorName", "treatmentDurationTotalMonths"])
-        && data.keys().size() == 50
+        && validPublicValues(data);
+    }
+    // All 50 canonical keys are read/type-checked below. Missing keys deny;
+    // the exact count also excludes extra keys, without repeating a long list.
+    function validPublicValues(data) {
+      return data is map && data.keys().size() == 50
         && data.nationalId is string
         && data.protocolDate is string
         && data.sex is string
@@ -164,7 +169,7 @@ service cloud.firestore {
       return admin()
         && after.diff(before).affectedKeys().hasOnly(['publicValues', 'investigations', 'status', 'updatedAt'])
         && after.updatedAt == request.time
-        && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublic(after.publicValues))
+        && (!after.diff(before).affectedKeys().hasAny(['publicValues']) || validPublicValues(after.publicValues))
         && validInvestigations(after.investigations)
         && after.status == (investigationsComplete(after.investigations) ? 'completed' : 'pending_completion');
     }
