@@ -156,3 +156,9 @@ Eski tek taraflı `dvtLocations` güvenle ilgili tarafa eşlenir. Eski bilateral
 ## Phase B: klinik arayüz
 
 `src/design-tokens.css` ortak navy/mor/teal paletini ve erişilebilir başarı/uyarı/hata renklerini tanımlar. Durum kartları kontrollü vurgu kullanır. Hasta satırı ana işlem, Görüntüle, Yazdır ve native popover menüsünden oluşur. Tüm Formu Düzenle ve Sil menüdedir; klavye, Escape, dış tıklama ve mobil viewport sınırları desteklenir. Silme güvenliği ve AHT davranışı korunur.
+
+## Phase C: Araştırma Veri Merkezi
+
+Veri Merkezi yalnız yetkili admin oturumunda, mevcut `subjects` dataset’iyle çalışır. Operasyonel toplam/durum/hekim/son kayıt özetleri ve AHT, hekim, durum, kayıt tarihi filtreleri client-side hesaplanır. Tarih aralığının iki yerel takvim günü de dahildir. Yeni Firestore collection/index veya yazma işlemi yoktur.
+
+Sorumluluk sınırı: `researchData.ts` ve `ResearchDataCenter.tsx` hangi kayıtların kullanılacağını belirler. Scope `filtered` veya `all` olur; aynı seçilmiş readonly dizi `renderExports(records, scope)` üzerinden sonraki export katmanına iletilir. Phase C dosya üretmez, SPSS schema/mapping veya veri sözlüğü içermez; export callback verilmediğinde işlevsiz buton gösterilmez.

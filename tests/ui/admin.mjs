@@ -146,6 +146,30 @@ export async function checkAdmin(browser, origin) {
     );
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("dialog").count(), 0);
+    await page.getByRole("button", { name: "Araştırma Veri Merkezi", exact: true }).click();
+    await page.getByRole("heading", { name: "Araştırma Veri Merkezi", exact: true }).waitFor();
+    await page.getByText("Filtrelenmiş 3 / toplam 3 kayıt", { exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Excel'e Aktar", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "SPSS İçin Dışa Aktar", exact: true }).count(), 0);
+    await page.getByLabel("Hekim", { exact: true }).selectOption("Dr. Adnan");
+    await page.getByText("Filtrelenmiş 1 / toplam 3 kayıt", { exact: true }).waitFor();
+    assert.equal(await page.locator(".research-table tbody tr").count(), 1);
+    await page.getByText("Seçilen kapsam: 1 kayıt", { exact: true }).waitFor();
+    await page.getByRole("radio", { name: "Tüm kayıtları dışa aktar", exact: true }).check();
+    await page.getByText("Seçilen kapsam: 3 kayıt", { exact: true }).waitFor();
+    await page.getByRole("radio", { name: "Filtrelenmiş kayıtları dışa aktar", exact: true }).check();
+    await page.getByLabel("Durum", { exact: true }).selectOption("empty");
+    await page.getByText("Filtrelenmiş 0 / toplam 3 kayıt", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "Filtreleri Temizle", exact: true }).click();
+    await page.getByText("Filtrelenmiş 3 / toplam 3 kayıt", { exact: true }).waitFor();
+    await page.getByLabel("Başlangıç tarihi", { exact: true }).fill("2099-01-01");
+    await page.getByLabel("Bitiş tarihi", { exact: true }).fill("2000-01-01");
+    assert.equal(await page.getByLabel("Başlangıç tarihi", { exact: true }).getAttribute("aria-invalid"), "true");
+    assert(await page.getByRole("radio", { name: "Tüm kayıtları dışa aktar", exact: true }).isDisabled());
+    await page.getByRole("button", { name: "Filtreleri Temizle", exact: true }).click();
+    await page.getByLabel("AHT kodu", { exact: true }).fill("AHT-002");
+    await page.getByText("Filtrelenmiş 1 / toplam 3 kayıt", { exact: true }).waitFor();
+    await page.screenshot({ path: "/tmp/tezform-phase-c-center.png", fullPage: true });
     console.log(
       "PASS actual admin dashboard states from values, physician search, partial save/reopen, full editor, seven-section detail, nested print media/PDF, mobile delete confirmation",
     );

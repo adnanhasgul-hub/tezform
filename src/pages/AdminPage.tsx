@@ -1,6 +1,7 @@
 import { createAdminRecordDraft } from "../services/adminModel";
 import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
 import { AdminRowActions } from "../components/AdminRowActions";
+import { ResearchDataCenter } from "../components/ResearchDataCenter";
 import {
   investigationState,
   investigationLabels,
@@ -57,6 +58,7 @@ export function AdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selection, setSelection] = useState<RecordSelection | null>(null);
+  const [researchCenterOpen, setResearchCenterOpen] = useState(false);
 
   const refreshSubjects = useCallback(async () => {
     setLoadingSubjects(true);
@@ -80,6 +82,7 @@ export function AdminPage() {
         else {
           setSubjects([]);
           setSelection(null);
+          setResearchCenterOpen(false);
         }
       }),
     [refreshSubjects],
@@ -178,6 +181,19 @@ export function AdminPage() {
             <h1>Yönetici Paneli</h1>
           </div>
           <div className="admin-topbar-actions">
+            <button
+              type="button"
+              className="button secondary"
+              aria-current={researchCenterOpen ? "page" : undefined}
+              onClick={() => {
+                setSelection(null);
+                setResearchCenterOpen((previous) => !previous);
+              }}
+            >
+              {researchCenterOpen
+                ? "Yönetici Paneli"
+                : "Araştırma Veri Merkezi"}
+            </button>
             <a className="button secondary" href="/">
               Forma Dön
             </a>
@@ -193,6 +209,21 @@ export function AdminPage() {
         </header>
 
         <main className="admin-dashboard">
+          {researchCenterOpen && (
+            <div hidden={Boolean(selection)}>
+              <ResearchDataCenter
+                subjects={subjects}
+                loading={loadingSubjects}
+                error={subjectsError}
+                onRefresh={() => void refreshSubjects()}
+                onBack={() => {
+                  setSelection(null);
+                  setResearchCenterOpen(false);
+                }}
+                onView={(id) => setSelection({ id, mode: "view" })}
+              />
+            </div>
+          )}
           {selection && selectedSubject ? (
             selection.mode === "delete" ? (
               <AdminDeleteDialog
@@ -226,7 +257,7 @@ export function AdminPage() {
                 onCompleted={() => handleInvestigationSaved(selectedSubject.id)}
               />
             )
-          ) : (
+          ) : researchCenterOpen ? null : (
             <>
               <section className="admin-stats" aria-label="Kayıt özeti">
                 <article className="admin-stat-card admin-stat-total">

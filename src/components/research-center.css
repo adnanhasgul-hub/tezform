@@ -1,0 +1,190 @@
+.research-center {
+  display: grid;
+  gap: 20px;
+}
+
+.research-center-heading,
+.research-recent li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.research-center-heading h2 {
+  margin: 4px 0 8px;
+  color: var(--color-primary);
+  font-size: clamp(24px, 3vw, 32px);
+}
+
+.research-center-heading p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.research-center .admin-stats {
+  margin-bottom: 0;
+}
+
+.research-overview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.research-card {
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-card);
+  box-shadow: 0 4px 18px var(--color-shadow);
+}
+
+.research-card h3 {
+  margin: 0 0 16px;
+  color: var(--color-primary);
+  font-size: 19px;
+}
+
+.research-physician-counts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.research-physician-counts > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.research-physician-counts dd {
+  min-width: 28px;
+  margin: 0;
+  color: var(--color-primary);
+  font-weight: 750;
+  text-align: right;
+}
+
+.research-recent {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.research-recent li {
+  padding: 6px 0;
+}
+
+.research-recent li strong,
+.research-recent li small {
+  display: block;
+}
+
+.research-recent li small {
+  margin-top: 3px;
+  color: var(--color-muted);
+}
+
+.research-recent .button {
+  min-height: 36px;
+  padding: 7px 11px;
+}
+
+.research-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.research-filters label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.research-filters input,
+.research-filters select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 8px;
+  background: var(--color-card);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.research-filters input:focus-visible,
+.research-filters select:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.research-filter-count {
+  color: var(--color-primary);
+  font-weight: 750;
+}
+
+.research-note {
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.research-table {
+  min-width: 640px;
+}
+
+.research-export-scope {
+  display: block;
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-soft-blue);
+}
+
+.research-export-scope legend {
+  padding-inline: 6px;
+  color: var(--color-primary);
+  font-weight: 750;
+}
+
+.research-scope-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.research-scope-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .research-center-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .research-overview,
+  .research-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .research-card {
+    padding: 14px;
+  }
+}
