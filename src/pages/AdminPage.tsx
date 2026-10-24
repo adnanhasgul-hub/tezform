@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminInvestigationForm } from "../components/AdminInvestigationForm";
+import { AdminSubjectDetail } from "../components/AdminSubjectDetail";
 import {
   AdminLoginError,
   loginAdmin,
@@ -152,12 +153,20 @@ export function AdminPage() {
 
         <main className="admin-dashboard">
           {selectedSubject ? (
-            <AdminInvestigationForm
-              key={selectedSubject.id}
-              subject={selectedSubject}
-              onBack={() => setSelectedSubject(null)}
-              onCompleted={refreshSubjects}
-            />
+            selectedSubject.status === "completed" ? (
+              <AdminSubjectDetail
+                key={selectedSubject.id}
+                subject={selectedSubject}
+                onBack={() => setSelectedSubject(null)}
+              />
+            ) : (
+              <AdminInvestigationForm
+                key={selectedSubject.id}
+                subject={selectedSubject}
+                onBack={() => setSelectedSubject(null)}
+                onCompleted={refreshSubjects}
+              />
+            )
           ) : (
             <>
               <section className="admin-stats" aria-label="Kayıt özeti">
@@ -277,8 +286,9 @@ export function AdminPage() {
                 </div>
                 <p className="admin-list-note">
                   “Formu Tamamla” yalnızca Bölüm 4 radyoloji ve laboratuvar
-                  alanlarını kaydeder. Hasta tarafından girilen Bölüm 1, 2, 3,
-                  5, 6 ve 7 verileri bu işlemde değiştirilmez.
+                  alanlarını kaydeder. “Görüntüle” tamamlanmış CRF'nin tüm
+                  bölümlerini salt okunur olarak açar ve doldurulmuş formun
+                  yazdırılmasını sağlar.
                 </p>
               </section>
             </>
