@@ -59,9 +59,6 @@ export function HomePage() {
           </div>
         </header>
         <main>
-          <section className="intro" aria-labelledby="page-title">
-            <h1 id="page-title">{FORM_TITLE}</h1>
-          </section>
           {!formOpen && <BloodNotice />}
           {!saved && !attemptStarted && (
             <details className="eligibility-review" open={!formOpen}>
