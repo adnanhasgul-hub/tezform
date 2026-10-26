@@ -1,1 +1,8 @@
-{ "projects": { "default": "tezform-2848f" } }
+{
+  "projects": { "default": "tezform-2848f" },
+  "targets": {
+    "tezform-2848f": {
+      "hosting": { "ahtform": ["ahtform"] }
+    }
+  }
+}

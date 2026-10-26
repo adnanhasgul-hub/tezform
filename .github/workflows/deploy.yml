@@ -46,4 +46,4 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TEZFORM_2848F }}
       - name: Deploy production Hosting
-        run: npx --no-install firebase deploy --only hosting --project tezform-2848f --non-interactive
+        run: npx --no-install firebase deploy --only hosting:ahtform --project tezform-2848f --non-interactive
