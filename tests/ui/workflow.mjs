@@ -1,5 +1,6 @@
 import { checkAdmin } from "./admin.mjs";
 import { checkDvt } from "./dvt.mjs";
+import { checkRegistrationPrint } from "./registration-print.mjs";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -185,6 +186,7 @@ try {
                 onAcknowledged: () => setAck(true),
                 onPrint: () => window.print(),
                 onClose: () => {
+                  if (!ack) return;
                   setRecord(null);
                   setAck(false);
                   setClosed(true);
@@ -194,9 +196,8 @@ try {
         React.createElement(PrintCrf, {
           preview: false,
           onClose: () => {},
-          blocked: !!record && !ack,
-          values: record && ack ? record.values : undefined,
-          subjectCode: record && ack ? record.result.subjectCode : undefined,
+          values: record?.values,
+          subjectCode: record?.result.subjectCode,
         }),
       );
     }
@@ -253,7 +254,7 @@ try {
     await page
       .getByRole("button", { name: "Formu Yazdır", exact: true })
       .count(),
-    0,
+    1,
   );
   assert.equal(
     await page
@@ -261,7 +262,7 @@ try {
       .count(),
     0,
   );
-  assert.equal(await page.locator(".print-view").count(), 0);
+  assert.equal(await page.locator(".print-view").count(), 1);
   await page.keyboard.press("Escape");
   assert(await dialog.isVisible());
   await page.mouse.click(1, 1);
@@ -311,6 +312,8 @@ try {
   console.log(
     "PASS required progression; optional Section 7 text fields; save pending/failure/retry; UUID reuse; required modal Escape/overlay lock; copy failure; acknowledgment; print without new allocation; close clears session",
   );
+
+  await checkRegistrationPrint(page, origin, fillRequiredPublicAnswers);
 
   // Actual /admin page: generic wrong-username error, no email field or dashboard.
   await page.goto(`${origin}/admin`);

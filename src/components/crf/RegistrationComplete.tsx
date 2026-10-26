@@ -109,6 +109,15 @@ export function RegistrationComplete({
               >
                 Kodu Kopyala
               </button>
+              {printReady && (
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={onPrint}
+                >
+                  Formu Yazdır
+                </button>
+              )}
               <button
                 className="button primary"
                 type="button"
