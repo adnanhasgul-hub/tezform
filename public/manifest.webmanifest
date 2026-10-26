@@ -1,0 +1,34 @@
+{
+  "id": "/",
+  "name": "AHTFORM",
+  "short_name": "AHTFORM",
+  "lang": "tr",
+  "description": "Apixaban Farmakogenetik ve Klinik Kanama Değerlendirme Veri Toplama Formu",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#172B4D",
+  "background_color": "#F4F7FB",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/ahtform-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/ahtform-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/ahtform-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
