@@ -138,9 +138,10 @@ export function HomePage() {
               onRegistered={(values, result) => setSaved({ values, result })}
               onAcknowledged={() => setAcknowledged(true)}
               onPrint={() => {
-                if (saved && acknowledged) window.print();
+                if (saved) window.print();
               }}
               onClose={() => {
+                if (!acknowledged) return;
                 setSaved(null);
                 setAcknowledged(false);
                 setAttemptStarted(false);
@@ -163,11 +164,8 @@ export function HomePage() {
       </div>
       <PrintCrf
         preview={printOpen}
-        blocked={saved !== null && !acknowledged}
-        values={saved && acknowledged ? saved.values : undefined}
-        subjectCode={
-          saved && acknowledged ? saved.result.subjectCode : undefined
-        }
+        values={saved?.values}
+        subjectCode={saved?.result.subjectCode}
         onClose={() => {
           setPrintOpen(false);
           window.requestAnimationFrame(() => printButtonRef.current?.focus());
