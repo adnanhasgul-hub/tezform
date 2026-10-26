@@ -1,16 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  acceptsAdminAlias,
-  canCheckAdminMembership,
-} from "../src/services/authPolicy.ts";
+import { canCheckAdminMembership } from "../src/services/authPolicy.ts";
 
-test("the visible adnan username is only a case-sensitive UI alias", () => {
-  assert(acceptsAdminAlias("adnan"));
-  assert(acceptsAdminAlias(" adnan "));
-  assert(!acceptsAdminAlias("Adnan"));
-  assert(!acceptsAdminAlias("other"));
-  assert(!acceptsAdminAlias(""));
+test("only a non-anonymous password identity can be checked for admin membership", () => {
+  assert(!canCheckAdminMembership({ isAnonymous: false, providerIds: ["google.com"] }));
+  assert(!canCheckAdminMembership({ isAnonymous: false, providerIds: ["anonymous"] }));
+  assert(canCheckAdminMembership({ isAnonymous: false, providerIds: ["password", "google.com"] }));
 });
 
 test("anonymous and missing identities never qualify for an admin membership lookup", () => {

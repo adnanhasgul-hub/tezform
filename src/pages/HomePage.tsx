@@ -47,14 +47,23 @@ export function HomePage() {
           </span>
           <div className="topbar-actions">
             {!formOpen && (
-              <button
-                ref={printButtonRef}
-                type="button"
-                className="button secondary"
-                onClick={() => setPrintOpen(true)}
-              >
-                Boş Form Yazdır
-              </button>
+              <>
+                <button
+                  ref={printButtonRef}
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setPrintOpen(true)}
+                >
+                  Boş Form Yazdır
+                </button>
+                <a
+                  href="/admin"
+                  className="button secondary"
+                  aria-label="AVM — Araştırma Veri Merkezi"
+                >
+                  AVM
+                </a>
+              </>
             )}
           </div>
         </header>

@@ -95,13 +95,13 @@ Onaydan sonra kod görünür kalır, **Formu Yazdır** `window.print()` çağır
 
 Boş form print ana ekranda korunur. AHT alanı boş çizgidir; DVT/PE ve yerel tarih gibi digital defaults kağıda işaretlenmez. Dolu print, commit edilen immutable snapshot ve kodu kullanır. Bölüm 4 tüm seçenekleriyle ve boş olarak basılır; Bölüm 7 Tarih yoktur. A4 portrait/8 mm, iki kolon, yaklaşık 8.5 pt gövde ve 10 pt bölüm başlığı korunmuştur. Çok uzun serbest metin çıktıyı büyütebilir; metin kesilmez.
 
-## Admin URL, alias ve parola
+## Admin URL ve parola
 
-`/admin` ekranında yalnızca Kullanıcı Adı ve Şifre vardır. Görsel alias **adnan**, auth hesabı `VITE_ADMIN_AUTH_EMAIL` ile seçilir. Bu Vite değişkeni **bundle'da görünür**; e-posta identifier'ını client-only Email/Password mimarisinde gizlemek mümkün değildir. Bu nedenle kişisel e-posta yerine yalnızca authentication için ayrılmış, kontrolünüzdeki teknik e-posta/alias kullanın. Env kullanımı identifier'ı secret yapmaz. Auth identifier'ı bilmek yetki vermez.
+Ana sayfadaki **AVM** bağlantısı `/admin` adresini açar. Giriş ekranında yalnızca **Şifre** alanı vardır; kullanıcı adı veya UI alias kullanılmaz. Auth hesabı mevcut `VITE_ADMIN_AUTH_EMAIL` ile seçilir. Bu Vite değişkeni **bundle'da görünür**; e-posta identifier'ını client-only Email/Password mimarisinde gizlemek mümkün değildir. Bu nedenle kişisel e-posta yerine yalnızca authentication için ayrılmış, kontrolünüzdeki teknik e-posta kullanın. Env kullanımı identifier'ı secret yapmaz. Auth identifier'ı bilmek yetki vermez.
 
-Parola Firebase Authentication tarafından doğrulanır; source/env/fixture/log/Firestore veya localStorage'a yazılmaz. Yanlış alias ve yanlış parola aynı genel hatayı verir. Başarılı Auth yeterli değildir: UID marker'ı ayrıca kontrol edilir. Marker yoksa dashboard ve hasta verisi yüklenmez. Anonymous kimlik marker'ı olsa bile admin sayılmaz. Marker alanında false yazmak yetkiyi kaldırmaz; marker belgesini silmek gerekir.
+Parola Firebase Authentication tarafından doğrulanır; source/env/fixture/log/Firestore veya localStorage'a yazılmaz. Boş parola reddedilir; yanlış parola güvenli, genel bir hata verir. Başarılı Auth yeterli değildir: UID marker'ı ayrıca kontrol edilir. Marker yoksa dashboard ve hasta verisi yüklenmez. Anonymous kimlik marker'ı olsa bile admin sayılmaz. Marker alanında false yazmak yetkiyi kaldırmaz; marker belgesini silmek gerekir.
 
-Panel hasta listesi, hekim araması, Bölüm 4 kısmi kayıt, tüm form düzenleme, tam görüntüleme, dolu print ve yeniden şifre doğrulamalı silme sağlar. Export eklenmemiştir. Çıkış Yap Auth oturumunu kapatıp login'e döner. Auth in-memory olduğu için reload da yeni login gerektirir.
+Yetkili giriş doğrudan **Araştırma Veri Merkezi**ni açar. Tek araştırma tablosu filtreler, export kapsamı, Excel/SPSS export ve mevcut hasta işlemlerini birlikte sunar: Bölüm 4 kısmi kayıt/tamamlama, tüm form düzenleme, tam görüntüleme, dolu print ve yeniden şifre doğrulamalı silme. Detay/düzenleme/yazdırma ve SPSS Veri Sözlüğü dönüşünde filtre ve kapsam korunur. Çıkış Yap Auth oturumunu kapatıp login'e döner. Auth in-memory olduğu için reload da yeni login gerektirir.
 
 ## Firebase Console: yeni kurulum referansı
 
@@ -122,7 +122,7 @@ Mevcut production ortamında Auth sağlayıcıları, admin ve counter kurulmuşt
 ## Dosyalar ve deployment
 
 - `src/firebase/client.ts`: mevcut modüler Web SDK; varsayılan bellek Firestore cache'i, kalıcı araştırma cache'i etkin değil.
-- `src/services/auth.ts` / `authPolicy.ts`: görünmez anonymous oturum, admin alias/UID guard.
+- `src/services/auth.ts` / `authPolicy.ts`: görünmez anonymous oturum, password-only admin girişi ve UID üyelik kontrolü.
 - `registrationCore.ts` / `registration.ts`: formatter, veri whitelist'i, gerçek transaction adapter'ı.
 - `submissionState.ts`: snapshot/requestId/double-click/retry kontrolü.
 - `RegistrationComplete.tsx`: zorunlu kod modalı ve onay sonrası eylemler.
@@ -159,7 +159,7 @@ Eski tek taraflı `dvtLocations` güvenle ilgili tarafa eşlenir. Eski bilateral
 
 ## Phase C: Araştırma Veri Merkezi
 
-Veri Merkezi yalnız yetkili admin oturumunda, mevcut `subjects` dataset’iyle çalışır. Operasyonel toplam/durum/hekim/son kayıt özetleri ve AHT, hekim, durum, kayıt tarihi filtreleri client-side hesaplanır. Tarih aralığının iki yerel takvim günü de dahildir. Yeni Firestore collection/index veya yazma işlemi yoktur.
+`/admin` doğrudan Veri Merkezi'ni açar; yalnız yetkili admin oturumunda, mevcut `subjects` dataset’iyle çalışır. Operasyonel toplam/durum/hekim/son kayıt özetleri ve AHT, hekim, durum, kayıt tarihi filtreleri client-side hesaplanır. Tarih aralığının iki yerel takvim günü de dahildir. Özet/filtre/export işlemleri yeni Firestore collection/index veya yazma işlemi oluşturmaz. Tablodaki mevcut `AdminRowActions` işlemleri aynı hasta detay/düzenleme/yazdırma/silme akışlarına `AdminPage` üzerinden yönlendirilir.
 
 Sorumluluk sınırı: `researchData.ts` ve `ResearchDataCenter.tsx` hangi kayıtların kullanılacağını belirler. Scope `filtered` veya `all` olur; aynı seçilmiş readonly dizi `renderExports(records, scope)` üzerinden sonraki export katmanına iletilir. Phase C dosya üretmez, SPSS schema/mapping veya veri sözlüğü içermez; export callback verilmediğinde işlevsiz buton gösterilmez.
 

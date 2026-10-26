@@ -1,6 +1,7 @@
 import { checkAdmin } from "./admin.mjs";
 import { checkDvt } from "./dvt.mjs";
 import { checkRegistrationPrint } from "./registration-print.mjs";
+import { checkAuth } from "./auth.mjs";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
@@ -20,7 +21,11 @@ const vite = spawn(
     "5190",
     "--strictPort",
   ],
-  { cwd: root, stdio: "pipe" },
+  {
+    cwd: root,
+    stdio: "pipe",
+    env: { ...process.env, VITE_ADMIN_AUTH_EMAIL: "admin-test@example.invalid" },
+  },
 );
 let browser;
 try {
@@ -315,25 +320,32 @@ try {
 
   await checkRegistrationPrint(page, origin, fillRequiredPublicAnswers);
 
-  // Actual /admin page: generic wrong-username error, no email field or dashboard.
+  // Actual unconfigured /admin page remains password-only and denies access.
   await page.goto(`${origin}/admin`);
   await page
     .getByRole("heading", { name: "Yönetici Girişi", exact: true })
     .waitFor();
-  await page.getByLabel("Kullanıcı Adı", { exact: true }).fill("invalid-alias");
+  assert.equal(await page.locator("input").count(), 1);
+  assert.equal(await page.getByLabel("Kullanıcı Adı", { exact: true }).count(), 0);
   await page.getByLabel("Şifre", { exact: true }).fill("test-only-fixture");
   await page.getByRole("button", { name: "Giriş Yap", exact: true }).click();
   await page
-    .getByText("Kullanıcı adı veya şifre hatalı.", { exact: true })
+    .getByText("Yönetici sistemiyle bağlantı kurulamadı. Lütfen tekrar deneyin.", { exact: true })
     .waitFor();
   assert.equal(await page.locator("input[type=email]").count(), 0);
   assert.equal(
     await page
-      .getByRole("heading", { name: "Yönetici Paneli", exact: true })
+      .getByRole("heading", { name: "Araştırma Veri Merkezi", exact: true })
       .count(),
     0,
   );
   await page.goto(origin);
+  const avm = page.getByRole("link", { name: "AVM — Araştırma Veri Merkezi", exact: true });
+  assert.equal(await avm.innerText(), "AVM");
+  assert.equal(await avm.getAttribute("href"), "/admin");
+  await avm.click();
+  await page.getByRole("heading", { name: "Yönetici Girişi", exact: true }).waitFor();
+  await page.getByRole("link", { name: "← Forma Dön", exact: true }).click();
   assert.equal(
     await page
       .getByRole("heading", {
@@ -364,6 +376,8 @@ try {
   await page.getByRole("button", { name: "Forma Dön", exact: true }).click();
   await page.getByRole("radio", { name: "Hayır", exact: true }).check();
   await page.getByRole("button", { name: "Formu Doldur", exact: true }).click();
+  assert.equal(await page.getByRole("link", { name: "AVM — Araştırma Veri Merkezi", exact: true }).count(), 0);
+  assert.equal(await page.getByRole("button", { name: "Boş Form Yazdır", exact: true }).count(), 0);
   await fillRequiredPublicAnswers();
   assert.equal(await page.locator("#crf-assessmentDate").count(), 0);
   await page.getByRole("button", { name: "Formu Kaydet", exact: true }).click();
@@ -375,7 +389,7 @@ try {
   assert.equal(await page.getByRole("dialog").count(), 0);
   assert.deepEqual(runtimeErrors, []);
   console.log(
-    "PASS duplicate center title removed; actual admin guard/wrong alias/no email; blank print unmarked; required answers pass before missing Firebase error; no runtime errors",
+    "PASS AVM link/navigation and active-form hiding; password-only admin denies unconfigured access; blank print unmarked; required answers pass before missing Firebase error; no runtime errors",
   );
   // Admin editors use the same clinical controls; persistence is injected only here.
   await page.goto(`${origin}/ui-harness`);
@@ -552,6 +566,7 @@ try {
   console.log(
     "PASS all 71 fields stress print with synthetic data; duration total included; no allocation performed",
   );
+  await checkAuth(browser, origin);
   await checkAdmin(browser, origin);
   await checkDvt(browser, origin);
 } finally {

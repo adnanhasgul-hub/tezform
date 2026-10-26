@@ -5,6 +5,7 @@ import {
   investigationState,
 } from "../services/adminModel";
 import { crfSections } from "./crf/sections";
+import { AdminRowActions, type AdminRowAction } from "./AdminRowActions";
 import {
   emptyRecordFilters,
   filterResearchSubjects,
@@ -18,8 +19,7 @@ export type ExportScope = "filtered" | "all";
 
 interface Props {
   subjects: readonly AdminSubjectSummary[];
-  onBack: () => void;
-  onView?: (id: string) => void;
+  onAction: (id: string, action: AdminRowAction) => void;
   loading?: boolean;
   error?: string;
   onRefresh?: () => void;
@@ -39,8 +39,7 @@ const dateLabel = (value: Date | null) =>
 /** Mounted only inside the existing authorized admin session. */
 export function ResearchDataCenter({
   subjects,
-  onBack,
-  onView,
+  onAction,
   loading = false,
   error = "",
   onRefresh,
@@ -88,7 +87,7 @@ export function ResearchDataCenter({
       <div className="research-center-heading">
         <div>
           <p className="eyebrow">TEZFORM · ARAŞTIRMA OPERASYONLARI</p>
-          <h2 id="research-center-title">Araştırma Veri Merkezi</h2>
+          <h2 id="research-center-title">Veri toplama özeti</h2>
           <p>Veri toplama sürecinin kayıt ve tamamlama özeti.</p>
         </div>
         <div className="admin-action-group">
@@ -102,9 +101,6 @@ export function ResearchDataCenter({
               {loading ? "Yükleniyor…" : "Listeyi Yenile"}
             </button>
           )}
-          <button type="button" className="button secondary" onClick={onBack}>
-            Yönetici Paneline Dön
-          </button>
         </div>
       </div>
       {error && (
@@ -160,16 +156,14 @@ export function ResearchDataCenter({
                     <strong>{record.subjectCode}</strong>
                     <small>{dateLabel(record.createdAt)}</small>
                   </span>
-                  {onView && (
-                    <button
-                      type="button"
-                      className="button secondary"
-                      aria-label={`${record.subjectCode} kaydını görüntüle`}
-                      onClick={() => onView(record.id)}
-                    >
-                      Görüntüle
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="button secondary"
+                    aria-label={`${record.subjectCode} kaydını görüntüle`}
+                    onClick={() => onAction(record.id, "view")}
+                  >
+                    Görüntüle
+                  </button>
                 </li>
               ))}
             </ol>
@@ -281,7 +275,7 @@ export function ResearchDataCenter({
                 <th scope="col">Kayıt Tarihi</th>
                 <th scope="col">Hekim</th>
                 <th scope="col">Durum</th>
-                {onView && <th scope="col">İşlem</th>}
+                <th scope="col">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -303,23 +297,19 @@ export function ResearchDataCenter({
                         {investigationLabels[status]}
                       </span>
                     </td>
-                    {onView && (
-                      <td>
-                        <button
-                          type="button"
-                          className="button secondary admin-action-button"
-                          onClick={() => onView(record.id)}
-                        >
-                          Görüntüle
-                        </button>
-                      </td>
-                    )}
+                    <td>
+                      <AdminRowActions
+                        subjectCode={record.subjectCode}
+                        state={status}
+                        onAction={(action) => onAction(record.id, action)}
+                      />
+                    </td>
                   </tr>
                 );
               })}
               {!filtered.length && (
                 <tr>
-                  <td colSpan={onView ? 5 : 4} className="admin-empty">
+                  <td colSpan={5} className="admin-empty">
                     {loading
                       ? "Kayıtlar yükleniyor…"
                       : "Filtrelere uygun kayıt bulunamadı."}

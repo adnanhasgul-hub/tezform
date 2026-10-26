@@ -1,13 +1,9 @@
 import { createAdminRecordDraft } from "../services/adminModel";
 import { AdminDeleteDialog } from "../components/AdminDeleteDialog";
-import { AdminRowActions } from "../components/AdminRowActions";
+import type { AdminRowAction } from "../components/AdminRowActions";
 import { ResearchDataCenter } from "../components/ResearchDataCenter";
 import { ResearchExports } from "../components/ResearchExports";
 import { SpssDictionary } from "../components/SpssDictionary";
-import {
-  investigationState,
-  investigationLabels,
-} from "../services/adminModel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminInvestigationForm } from "../components/AdminInvestigationForm";
 import { AdminSubjectDetail } from "../components/AdminSubjectDetail";
@@ -23,44 +19,21 @@ import {
   listAdminSubjects,
   type AdminSubjectSummary,
 } from "../services/adminRecords";
-import { adminUsernameAlias } from "../services/authPolicy";
-
-type StatusFilter = "all" | "empty" | "partial" | "complete";
-type RecordMode =
-  | "view"
-  | "complete"
-  | "edit"
-  | "full-edit"
-  | "print"
-  | "delete";
 
 interface RecordSelection {
   id: string;
-  mode: RecordMode;
-}
-
-const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
-  dateStyle: "short",
-  timeStyle: "short",
-});
-
-function formatDate(value: Date | null) {
-  return value ? dateFormatter.format(value) : "—";
+  mode: AdminRowAction;
 }
 
 export function AdminPage() {
   const [session, setSession] = useState<AdminSession>({ status: "checking" });
-  const [username, setUsername] = useState(adminUsernameAlias);
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [subjects, setSubjects] = useState<AdminSubjectSummary[]>([]);
   const [loadingSubjects, setLoadingSubjects] = useState(false);
   const [subjectsError, setSubjectsError] = useState("");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selection, setSelection] = useState<RecordSelection | null>(null);
-  const [researchCenterOpen, setResearchCenterOpen] = useState(false);
   const [dictionaryOpen, setDictionaryOpen] = useState(false);
 
   const refreshSubjects = useCallback(async () => {
@@ -85,7 +58,6 @@ export function AdminPage() {
         else {
           setSubjects([]);
           setSelection(null);
-          setResearchCenterOpen(false);
           setDictionaryOpen(false);
         }
       }),
@@ -100,40 +72,6 @@ export function AdminPage() {
     [selection, subjects],
   );
 
-  const counts = useMemo(
-    () => ({
-      total: subjects.length,
-      empty: subjects.filter(
-        (subject) => investigationState(subject.investigations) === "empty",
-      ).length,
-      partial: subjects.filter(
-        (subject) => investigationState(subject.investigations) === "partial",
-      ).length,
-      completed: subjects.filter(
-        (subject) => investigationState(subject.investigations) === "complete",
-      ).length,
-    }),
-    [subjects],
-  );
-
-  const filteredSubjects = useMemo(() => {
-    const needle = search.trim().toLocaleUpperCase("tr-TR");
-    return subjects.filter((subject) => {
-      const matchesStatus =
-        statusFilter === "all" ||
-        investigationState(subject.investigations) === statusFilter;
-      const matchesSearch =
-        !needle ||
-        subject.subjectCode.toLocaleUpperCase("tr-TR").includes(needle) ||
-        (subject.publicValues.investigatorName || "")
-          .toLocaleUpperCase("tr-TR")
-          .includes(needle) ||
-        (/^\d+$/.test(needle) &&
-          String(subject.subjectNumber).includes(needle));
-      return matchesStatus && matchesSearch;
-    });
-  }, [search, statusFilter, subjects]);
-
   async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -142,14 +80,14 @@ export function AdminPage() {
     const submittedPassword = password;
     setPassword("");
     try {
-      await loginAdmin(username, submittedPassword);
+      await loginAdmin(submittedPassword);
     } catch (error) {
       setMessage(
         error instanceof AdminLoginError && error.reason === "unauthorized"
           ? "Bu hesap yönetici yetkisine sahip değil."
           : error instanceof AdminLoginError && error.reason === "unavailable"
             ? "Yönetici sistemiyle bağlantı kurulamadı. Lütfen tekrar deneyin."
-            : "Kullanıcı adı veya şifre hatalı.",
+            : "Şifre hatalı.",
       );
     } finally {
       setBusy(false);
@@ -182,24 +120,10 @@ export function AdminPage() {
         <header className="admin-topbar">
           <div>
             <p className="eyebrow">TEZFORM · YÖNETİCİ ALANI</p>
-            <h1>Yönetici Paneli</h1>
+            <h1>Araştırma Veri Merkezi</h1>
           </div>
           <div className="admin-topbar-actions">
-            <button
-              type="button"
-              className="button secondary"
-              aria-current={researchCenterOpen ? "page" : undefined}
-              onClick={() => {
-                setSelection(null);
-                setDictionaryOpen(false);
-                setResearchCenterOpen((previous) => !previous);
-              }}
-            >
-              {researchCenterOpen
-                ? "Yönetici Paneli"
-                : "Araştırma Veri Merkezi"}
-            </button>
-            {researchCenterOpen && !dictionaryOpen && (
+            {!dictionaryOpen && (
               <button
                 type="button"
                 className="button secondary"
@@ -226,24 +150,18 @@ export function AdminPage() {
         </header>
 
         <main className="admin-dashboard">
-          {researchCenterOpen && (
-            <div hidden={Boolean(selection) || dictionaryOpen}>
-              <ResearchDataCenter
-                subjects={subjects}
-                loading={loadingSubjects}
-                error={subjectsError}
-                onRefresh={() => void refreshSubjects()}
-                onBack={() => {
-                  setSelection(null);
-                  setResearchCenterOpen(false);
-                }}
-                onView={(id) => setSelection({ id, mode: "view" })}
-                renderExports={(records, scope) => (
-                  <ResearchExports records={records} scope={scope} />
-                )}
-              />
-            </div>
-          )}
+          <div hidden={Boolean(selection) || dictionaryOpen}>
+            <ResearchDataCenter
+              subjects={subjects}
+              loading={loadingSubjects}
+              error={subjectsError}
+              onRefresh={() => void refreshSubjects()}
+              onAction={(id, mode) => setSelection({ id, mode })}
+              renderExports={(records, scope) => (
+                <ResearchExports records={records} scope={scope} />
+              )}
+            />
+          </div>
           {dictionaryOpen ? (
             <SpssDictionary onBack={() => setDictionaryOpen(false)} />
           ) : selection && selectedSubject ? (
@@ -279,143 +197,7 @@ export function AdminPage() {
                 onCompleted={() => handleInvestigationSaved(selectedSubject.id)}
               />
             )
-          ) : researchCenterOpen ? null : (
-            <>
-              <section className="admin-stats" aria-label="Kayıt özeti">
-                <article className="admin-stat-card admin-stat-total">
-                  <span>Toplam Hasta</span>
-                  <strong>{counts.total}</strong>
-                </article>
-                <article className="admin-stat-card admin-stat-empty">
-                  <span>Boş</span>
-                  <strong>{counts.empty}</strong>
-                </article>
-                <article className="admin-stat-card admin-stat-partial">
-                  <span>Devam Et</span>
-                  <strong>{counts.partial}</strong>
-                </article>
-                <article className="admin-stat-card admin-stat-complete">
-                  <span>Tamamlandı</span>
-                  <strong>{counts.completed}</strong>
-                </article>
-              </section>
-
-              <section
-                className="admin-records"
-                aria-labelledby="records-title"
-              >
-                <div className="admin-records-heading">
-                  <div>
-                    <p className="eyebrow">ARAŞTIRMA KAYITLARI</p>
-                    <h2 id="records-title">Hasta Kayıtları</h2>
-                  </div>
-                  <button
-                    type="button"
-                    className="button secondary"
-                    disabled={loadingSubjects}
-                    onClick={() => void refreshSubjects()}
-                  >
-                    {loadingSubjects ? "Yükleniyor…" : "Listeyi Yenile"}
-                  </button>
-                </div>
-
-                <div className="admin-filters">
-                  <label>
-                    <span>Hasta kodu veya hekim ile ara</span>
-                    <input
-                      type="search"
-                      placeholder="Örn. AHT-001 veya 001"
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>Durum</span>
-                    <select
-                      value={statusFilter}
-                      onChange={(event) =>
-                        setStatusFilter(event.target.value as StatusFilter)
-                      }
-                    >
-                      <option value="all">Tümü</option>
-                      <option value="empty">Boş</option>
-                      <option value="partial">Devam Et</option>
-                      <option value="complete">Tamamlandı</option>
-                    </select>
-                  </label>
-                </div>
-
-                {subjectsError && (
-                  <p className="field-error" role="alert">
-                    {subjectsError}
-                  </p>
-                )}
-
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Hasta Kodu</th>
-                        <th scope="col">Kayıt Tarihi</th>
-                        <th scope="col">Hekim</th>
-                        <th scope="col">Durum</th>
-                        <th scope="col">İşlem</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSubjects.map((subject) => (
-                        <tr key={subject.id}>
-                          <td>
-                            <strong className="admin-subject-code">
-                              {subject.subjectCode}
-                            </strong>
-                          </td>
-                          <td>{formatDate(subject.createdAt)}</td>
-                          <td>
-                            {subject.publicValues.investigatorName?.trim() ||
-                              "—"}
-                          </td>
-                          <td>
-                            <span
-                              className={`admin-status admin-status-${investigationState(subject.investigations)}`}
-                            >
-                              {
-                                investigationLabels[
-                                  investigationState(subject.investigations)
-                                ]
-                              }
-                            </span>
-                          </td>
-                          <td>
-                            <AdminRowActions
-                              subjectCode={subject.subjectCode}
-                              state={investigationState(subject.investigations)}
-                              onAction={(mode) =>
-                                setSelection({ id: subject.id, mode })
-                              }
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                      {!loadingSubjects && filteredSubjects.length === 0 && (
-                        <tr>
-                          <td className="admin-empty" colSpan={5}>
-                            {subjects.length === 0
-                              ? "Henüz hasta kaydı bulunmuyor."
-                              : "Arama ve filtreye uygun kayıt bulunamadı."}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="admin-list-note">
-                  Bölüm 4 durumu kayıtlı değerlerden hesaplanır. “Tüm Formu
-                  Düzenle” mevcut kaydı günceller; yeni hasta kodu oluşturmaz.
-                </p>
-              </section>
-            </>
-          )}
+          ) : null}
         </main>
       </div>
     );
@@ -453,17 +235,6 @@ export function AdminPage() {
                 }}
                 autoComplete="on"
               >
-                <div className="form-field" style={{ marginBottom: 16 }}>
-                  <label htmlFor="admin-username">Kullanıcı Adı</label>
-                  <input
-                    id="admin-username"
-                    name="username"
-                    autoComplete="username"
-                    value={username}
-                    disabled={busy}
-                    onChange={(event) => setUsername(event.target.value)}
-                  />
-                </div>
                 <div className="form-field" style={{ marginBottom: 20 }}>
                   <label htmlFor="admin-password">Şifre</label>
                   <input
@@ -471,6 +242,7 @@ export function AdminPage() {
                     name="password"
                     type="password"
                     autoComplete="current-password"
+                    required
                     value={password}
                     disabled={busy}
                     onChange={(event) => setPassword(event.target.value)}

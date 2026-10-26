@@ -12,7 +12,7 @@ import {
 } from "firebase/auth";
 import { doc, getDocFromServer } from "firebase/firestore";
 import { auth, db } from "../firebase/client";
-import { acceptsAdminAlias, canCheckAdminMembership } from "./authPolicy";
+import { canCheckAdminMembership } from "./authPolicy";
 
 let memoryAuthPromise: Promise<Auth> | null = null;
 let anonymousPromise: Promise<User> | null = null;
@@ -80,12 +80,8 @@ export class AdminLoginError extends Error {
   }
 }
 
-export async function loginAdmin(
-  username: string,
-  password: string,
-): Promise<void> {
-  if (!acceptsAdminAlias(username) || !password)
-    throw new AdminLoginError("credentials");
+export async function loginAdmin(password: string): Promise<void> {
+  if (!password) throw new AdminLoginError("credentials");
   const email = import.meta.env.VITE_ADMIN_AUTH_EMAIL?.trim();
   if (!email || !auth || !db) throw new AdminLoginError("unavailable");
   let user: User;
